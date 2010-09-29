@@ -1,0 +1,16 @@
+## Interface: 30300
+## X-Compatible-With: 40000
+## Title: Alts
+## Notes: Manages main-alts relations.
+## Author: Talryn
+## Version: @project-version@
+## OptionalDeps: Ace3, LibDeformat-3.0, lib-st, LibDataBroker-1.1, LibDBIcon-1.0
+## X-Embeds: Ace3
+## X-Category: Interface Enhancements 
+## SavedVariables: AltsDB
+
+embeds.xml
+
+locale.xml
+
+Alts.lua
