@@ -694,7 +694,7 @@ function Alts:OnInitialize()
 		end,
 		OnTooltipShow = function(tooltip)
 			if tooltip and tooltip.AddLine then
-				tooltip:AddLine(GREEN .. L["Alts"]..ADDON_VERSION)
+				tooltip:AddLine(GREEN .. L["Alts"].." "..ADDON_VERSION)
 				tooltip:AddLine(YELLOW .. L["Left click"] .. " " .. WHITE
 					.. L["to open/close the window"])
 				tooltip:AddLine(YELLOW .. L["Right click"] .. " " .. WHITE
