@@ -34,6 +34,9 @@ L["Delete Alt"] = true
 L["Are you sure you wish to remove"] = true
 L["as an alt of"] = true
 
+L["Delete Main"] = true
+L["Are you sure you wish to delete the main and all user-entered alts for:"] = true
+
 L["Minimap Button"] = true
 L["Toggle the minimap button"] = true
 L["Verbose"] = true

@@ -62,6 +62,7 @@ local setMainFrame = nil
 local addAltFrame = nil
 local editAltsFrame = nil
 local confirmDeleteFrame = nil
+local confirmMainDeleteFrame = nil
 local Mains = {}
 local MainsBySource = {}
 local AllMains = {}
@@ -328,16 +329,23 @@ end
 -- @return list List of alts for the main.
 function Alts:GetAltsForSource(main, source)
     if not main or #main == 0 or not source or #source == 0 then return nil end
-    if not self.db.realm.altsBySource[source] then return nil end
 
     main = self:TitleCase(main)
     
-    if not self.db.realm.altsBySource[source][main] or
-        #self.db.realm.altsBySource[source][main] == 0 then
-        return nil
+    if not source then
+    	if self.db.realm.alts[main] and #self.db.realm.alts[main] > 0 then
+    	    return unpack(self.db.realm.alts[main])
+    	end
+    else
+        if not self.db.realm.altsBySource[source] then return nil end
+
+        if self.db.realm.altsBySource[source][main] and
+            #self.db.realm.altsBySource[source][main] > 0 then
+            return unpack(self.db.realm.altsBySource[source][main])
+        end
     end
-    
-    return unpack(self.db.realm.altsBySource[source][main])
+
+    return nil
 end
 
 --- Remove a main-alt relationship.
@@ -435,6 +443,29 @@ function Alts:GetAllMains()
     end
 
     return AllMains
+end
+
+function Alts:DeleteUserMain(main)
+    if not main then return end
+
+    local alts
+    if useLibAlts == true then
+        alts = { LibAlts:GetAltsForSource(main, nil) }
+    else
+        alts = { self:GetAltsForSource(main, nil) }
+    end
+    
+    if alts and #alts > 0 then
+        for i, alt in pairs(alts) do
+            if alt and #alt > 0 then
+                if useLibAlts then
+                    LibAlts:DeleteAlt(main, alt)
+                else
+                    self:DeleteAlt(main, alt)
+                end
+            end
+        end
+    end
 end
 
 function Alts:UpdateMainsTable(main)
@@ -811,7 +842,12 @@ end
 function Alts:GetMainHandler(input)
 	if input and #input > 0 then
 		local alt = self:TitleCase(input)
-		local main = self:GetMain(alt)
+		local main
+		if useLibAlts then
+		    main = LibAlts:GetMain(alt)
+		else
+		    main = self:GetMain(alt)
+	    end
 		if main and #main > 0 then
             local strFormat = L["Main for %s: %s"]
 		    self:Print(strFormat:format(alt, main))
@@ -1004,16 +1040,15 @@ function Alts:CreateAltsFrame()
 	deletebutton:SetPoint("BOTTOM", altswindow, "BOTTOM", -60, 70)
 	deletebutton:SetScript("OnClick", 
 		function(this)
---[[
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
 				local row = frame.table:GetRow(frame.table:GetSelection())
 				if row[1] and #row[1] > 0 then
-					confirmDeleteFrame.charname:SetText(row[1])
-					confirmDeleteFrame:Show()
+					confirmMainDeleteFrame.mainname:SetText(row[1])
+					confirmMainDeleteFrame:Show()
+					altsFrame:Hide()
 				end
 			end
-]]--
 		end)
 
 	local editbutton = CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
@@ -1325,6 +1360,66 @@ function Alts:CreateConfirmDeleteFrame()
 	return deletewindow
 end
 
+function Alts:CreateConfirmMainDeleteFrame()
+	local deletewindow = CreateFrame("Frame", "Alts_ConfirmMainDeleteWindow", UIParent)
+	deletewindow:SetFrameStrata("DIALOG")
+	deletewindow:SetToplevel(true)
+	deletewindow:SetWidth(400)
+	deletewindow:SetHeight(200)
+	deletewindow:SetPoint("CENTER", UIParent)
+	deletewindow:SetBackdrop(
+		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
+	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
+		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
+	deletewindow:SetBackdropColor(0,0,0,1)
+    
+	local headertext = deletewindow:CreateFontString("Alts_ConfirmDelMain_HeaderText", deletewindow, "GameFontNormalLarge")
+	headertext:SetPoint("TOP", deletewindow, "TOP", 0, -20)
+	headertext:SetText(L["Delete Main"])
+
+	local warningtext = deletewindow:CreateFontString("Alts_ConfirmDelMain_WarningText", deletewindow, "GameFontNormalLarge")
+	warningtext:SetPoint("TOP", headertext, "TOP", 0, -50)
+	warningtext:SetWordWrap(true)
+	warningtext:SetWidth(350)
+	warningtext:SetText(L["Are you sure you wish to delete the main and all user-entered alts for:"])
+
+	local mainname = deletewindow:CreateFontString("Alts_ConfirmDelMain_CharName", deletewindow, "GameFontNormal")
+	mainname:SetPoint("BOTTOM", warningtext, "BOTTOM", 0, -30)
+	mainname:SetFont(mainname:GetFont(), 14)
+	mainname:SetTextColor(1.0,1.0,1.0,1)
+
+	local deletebutton = CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
+	deletebutton:SetText(L["Delete"])
+	deletebutton:SetWidth(100)
+	deletebutton:SetHeight(20)
+	deletebutton:SetPoint("BOTTOM", deletewindow, "BOTTOM", -60, 20)
+	deletebutton:SetScript("OnClick",
+	    function(this)
+	        self:DeleteUserMain(mainname:GetText())
+	        this:GetParent():Hide()
+            self:UpdateMainsTable()
+            altsFrame.table:SortData()
+            altsFrame:Show()
+	    end)
+
+	local cancelbutton = CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
+	cancelbutton:SetText(L["Cancel"])
+	cancelbutton:SetWidth(100)
+	cancelbutton:SetHeight(20)
+	cancelbutton:SetPoint("BOTTOM", deletewindow, "BOTTOM", 60, 20)
+	cancelbutton:SetScript("OnClick",
+	    function(this)
+	        this:GetParent():Hide()
+	        altsFrame:Show()
+	    end)
+
+	deletewindow.mainname = mainname
+    
+	deletewindow:Hide()
+
+	return deletewindow
+end
+
 function Alts:EditAltsHandler(input)
 	local name = nil
 	local alts
@@ -1420,7 +1515,10 @@ function Alts:OnEnable()
 
 	-- Create the Confirm Delete Alt frame for later use
 	confirmDeleteFrame = self:CreateConfirmDeleteFrame()
-	
+
+	-- Create the Confirm Delete Alt frame for later use
+	confirmMainDeleteFrame = self:CreateConfirmMainDeleteFrame()
+
 	-- Add the Edit Note menu item on unit frames
 	self:AddSetMainMenuItem()
 end
