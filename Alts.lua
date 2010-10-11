@@ -60,6 +60,7 @@ local altsLDB = nil
 local altsFrame = nil
 local setMainFrame = nil
 local addAltFrame = nil
+local addMainFrame = nil
 local editAltsFrame = nil
 local confirmDeleteFrame = nil
 local confirmMainDeleteFrame = nil
@@ -922,7 +923,11 @@ function Alts:CreateAddAltFrame()
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
 	cancelbutton:SetPoint("BOTTOM", addalt, "BOTTOM", 60, 20)
-	cancelbutton:SetScript("OnClick", function() cancelbutton:GetParent():Hide(); end)
+	cancelbutton:SetScript("OnClick", 
+	    function(this)
+	        this:GetParent():Hide()
+	        editAltsFrame:Show()
+	    end)
 
 	local headertext = addalt:CreateFontString("Alts_HeaderText", addalt, "GameFontNormalLarge")
 	headertext:SetPoint("TOP", addalt, "TOP", 0, -20)
@@ -939,6 +944,118 @@ function Alts:CreateAddAltFrame()
 	addalt:Hide()
 
 	return addalt
+end
+
+function Alts:CreateAddMainFrame()
+	local addmain = CreateFrame("Frame", "Alts_AddMainWindow", UIParent)
+	addmain:SetFrameStrata("DIALOG")
+	addmain:SetToplevel(true)
+	addmain:SetWidth(400)
+	addmain:SetHeight(200)
+	addmain:SetPoint("CENTER", UIParent)
+	addmain:SetBackdrop(
+		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
+	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
+		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
+	addmain:SetBackdropColor(0,0,0,1)
+
+	local headertext = addmain:CreateFontString("Alts_AddMain_HeaderText", addmain, "GameFontNormalLarge")
+	headertext:SetPoint("TOP", addmain, "TOP", 0, -20)
+	headertext:SetText(L["Add Main"])
+
+	local mainlabel = addmain:CreateFontString("Alts_AddMain_MainLabel", addmain, "GameFontNormal")
+	mainlabel:SetText(L["Main: "])
+	mainlabel:SetPoint("TOP", headertext, "BOTTOM", 0, -30)
+	mainlabel:SetPoint("LEFT", addmain, "LEFT", 20, 0)
+
+	local mainname = CreateFrame("EditBox", nil, addmain, "InputBoxTemplate")
+	mainname:SetFontObject(ChatFontNormal)
+	mainname:SetWidth(150)
+	mainname:SetHeight(35)
+	mainname:SetPoint("LEFT", mainlabel, "RIGHT", 30, 0)
+	mainname:SetScript("OnShow", function(this) this:SetFocus() end)
+	mainname:SetScript("OnEnterPressed",
+	    function(this)
+	        local frame = this:GetParent()
+	        local main = frame.mainname:GetText()
+	        local alt = frame.altname:GetText()
+	        if main and alt and #main > 0 and #alt > 0 then
+    	        self:AddMainName(main,alt)
+    	        frame:Hide()
+                self:UpdateMainsTable()
+                altsFrame.table:SortData()
+                altsFrame:Show()
+            end
+	    end)
+	mainname:SetScript("OnEscapePressed",
+	    function(this)
+	        this:GetParent():Hide()
+	    end)
+
+	local altlabel = addmain:CreateFontString("Alts_AddMain_AltLabel", addmain, "GameFontNormal")
+	altlabel:SetText(L["Alt: "])
+	altlabel:SetPoint("TOPLEFT", mainlabel, "BOTTOMLEFT", 0, -30)
+
+	local altname = CreateFrame("EditBox", nil, addmain, "InputBoxTemplate")
+	altname:SetFontObject(ChatFontNormal)
+	altname:SetWidth(150)
+	altname:SetHeight(35)
+	altname:SetPoint("TOP", altlabel, "TOP")
+	altname:SetPoint("LEFT", mainname, "LEFT")
+	altname:SetScript("OnEnterPressed",
+	    function(this)
+	        local frame = this:GetParent()
+	        local main = frame.mainname:GetText()
+	        local alt = frame.altname:GetText()
+	        if main and alt and #main > 0 and #alt > 0 then
+    	        self:AddMainName(main,alt)
+    	        frame:Hide()
+                self:UpdateMainsTable()
+                altsFrame.table:SortData()
+                altsFrame:Show()
+            end
+	    end)
+	altname:SetScript("OnEscapePressed",
+	    function(this)
+	        this:GetParent():Hide()
+	    end)
+
+	local savebutton = CreateFrame("Button", nil, addmain, "UIPanelButtonTemplate")
+	savebutton:SetText(L["Save"])
+	savebutton:SetWidth(100)
+	savebutton:SetHeight(20)
+	savebutton:SetPoint("BOTTOM", addmain, "BOTTOM", -60, 20)
+	savebutton:SetScript("OnClick", 
+	    function(this)
+	        local frame = this:GetParent()
+	        local main = frame.mainname:GetText()
+	        local alt = frame.altname:GetText()
+	        if main and alt and #main > 0 and #alt > 0 then
+    	        self:AddMainName(main,alt)
+    	        frame:Hide()
+                self:UpdateMainsTable()
+                altsFrame.table:SortData()
+                altsFrame:Show()
+            end
+	    end)
+
+	local cancelbutton = CreateFrame("Button", nil, addmain, "UIPanelButtonTemplate")
+	cancelbutton:SetText(L["Cancel"])
+	cancelbutton:SetWidth(100)
+	cancelbutton:SetHeight(20)
+	cancelbutton:SetPoint("BOTTOM", addmain, "BOTTOM", 60, 20)
+	cancelbutton:SetScript("OnClick", 
+	    function(this)
+	        this:GetParent():Hide()
+	        altsFrame:Show()
+	    end)
+
+	addmain.mainname = mainname
+	addmain.altname = altname
+
+	addmain:Hide()
+
+	return addmain
 end
 
 function Alts:CreateAltsFrame()
@@ -1033,11 +1150,23 @@ function Alts:CreateAltsFrame()
 	closebutton:SetPoint("BOTTOM", altswindow, "BOTTOM", 0, 20)
 	closebutton:SetScript("OnClick", function(this) this:GetParent():Hide(); end)
 
+	local addbutton = CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
+	addbutton:SetText(L["Add"])
+	addbutton:SetWidth(90)
+	addbutton:SetHeight(20)
+	addbutton:SetPoint("BOTTOM", altswindow, "BOTTOM", -120, 70)
+	addbutton:SetScript("OnClick", 
+		function(this)
+		    addMainFrame.mainname:SetText("")
+		    addMainFrame.altname:SetText("")
+		    addMainFrame:Show()
+		end)
+
 	local deletebutton = CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
 	deletebutton:SetText(L["Delete"])
 	deletebutton:SetWidth(90)
 	deletebutton:SetHeight(20)
-	deletebutton:SetPoint("BOTTOM", altswindow, "BOTTOM", -60, 70)
+	deletebutton:SetPoint("BOTTOM", altswindow, "BOTTOM", 0, 70)
 	deletebutton:SetScript("OnClick", 
 		function(this)
 		    local frame = this:GetParent()
@@ -1055,7 +1184,7 @@ function Alts:CreateAltsFrame()
 	editbutton:SetText(L["Edit"])
 	editbutton:SetWidth(90)
 	editbutton:SetHeight(20)
-	editbutton:SetPoint("BOTTOM", altswindow, "BOTTOM", 60, 70)
+	editbutton:SetPoint("BOTTOM", altswindow, "BOTTOM", 120, 70)
 	editbutton:SetScript("OnClick", 
 		function(this)
 		    local frame = this:GetParent()
@@ -1512,6 +1641,9 @@ function Alts:OnEnable()
 
 	-- Create the Add Alt frame to use later
 	addAltFrame = self:CreateAddAltFrame()
+
+	-- Create the Add Main frame to use later
+	addMainFrame = self:CreateAddMainFrame()
 
 	-- Create the Confirm Delete Alt frame for later use
 	confirmDeleteFrame = self:CreateConfirmDeleteFrame()
