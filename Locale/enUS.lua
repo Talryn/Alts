@@ -46,7 +46,10 @@ L["Toggles the display of informational messages"] = true
 
 L["Guild Import Options"] = true
 L["Auto Import Guild"] = true
-L["Toggles if main/alt data should be automaticall imported from guild notes."] = true
+L["Toggles if main/alt data should be automatically imported from guild notes."] = true
+L["Report Missing Mains"] = true
+L["Toggles if missing mains should be reported when importing."] = true
+L["Reference to a non-existent main %s for %s."] = true
 
 L["Display Options"] = true
 L["Main Name In Tooltips"] = true

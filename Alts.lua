@@ -47,6 +47,7 @@ local defaults = {
         singleLineTooltipDisplay = true,
 		wrapTooltip = true,
 		wrapTooltipLength = 50,
+		reportMissingMains = false
 	},
 	realm = {
 	    alts = {},
@@ -255,11 +256,29 @@ function Alts:UpdateGuildAlts()
         }
 
         for i,v in ipairs(funcs) do
+            local badRefFmt = L["Reference to a non-existent main %s for %s."]
+
             main = self:TitleCase(v(officernote))
-            if main and guildMembers[main] then break end
+            if main and #main > 0 then
+                if guildMembers[main] then 
+                    break
+                elseif main ~= self:TitleCase(officernote) then
+                    if self.db.profile.reportMissingMains then
+                        self:Print(badRefFmt:format(main, name))
+                    end
+                end
+            end
             
             main = self:TitleCase(v(publicnote))
-            if main and guildMembers[main] then break end
+            if main and #main > 0 then
+                if guildMembers[main] then
+                    break
+                elseif main ~= self:TitleCase(publicnote) then
+                    if self.db.profile.reportMissingMains then
+                        self:Print(badRefFmt:format(main, name))
+                    end
+                end
+            end
         end
         
         -- Check if we found a valid alt name
@@ -583,11 +602,19 @@ function Alts:GetOptions()
         		},
         	    autoImportGuild = {
                     name = L["Auto Import Guild"],
-                    desc = L["Toggles if main/alt data should be automaticall imported from guild notes."],
+                    desc = L["Toggles if main/alt data should be automatically imported from guild notes."],
                     type = "toggle",
                     set = function(info, val) self.db.profile.autoGuildImport = val end,
                     get = function(info) return self.db.profile.autoGuildImport end,
         			order = 30
+                },
+        	    reportMissingMains = {
+                    name = L["Report Missing Mains"],
+                    desc = L["Toggles if missing mains should be reported when importing."],
+                    type = "toggle",
+                    set = function(info, val) self.db.profile.reportMissingMains = val end,
+                    get = function(info) return self.db.profile.reportMissingMains end,
+        			order = 40
                 },
         		displayheaderDisplay = {
         			order = 100,
