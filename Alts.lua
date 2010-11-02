@@ -85,6 +85,34 @@ local function ReverseTable(table)
 	return reverse
 end
 
+function Alts:HookChatFrames()
+    for i = 1, NUM_CHAT_WINDOWS do
+        local chatFrame = _G["ChatFrame" .. i]
+        if chatFrame ~= COMBATLOG then
+            self:RawHook(chatFrame, "AddMessage", true)
+        end
+    end
+end
+
+local function AddMainNameForChat(message, name)
+    if name and #name > 0 then
+        local main = LibAlts:GetMain(name)
+        if main and #main > 0 then
+            local messageFmt = "%s (%s)"
+            return messageFmt:format(message, main)
+        end
+    end
+    
+    return message
+end
+
+function Alts:AddMessage(frame, text, ...)
+    if text and type(text) == "string" then
+        text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddMainNameForChat)
+    end
+    return self.hooks[frame].AddMessage(frame, text, ...)
+end
+
 --- Returns a name formatted in title case (i.e., first character upper case, the rest lower).
 -- @name :TitleCase
 -- @param name The name to be converted.
@@ -729,6 +757,9 @@ function Alts:OnInitialize()
 	self:RegisterChatCommand("delalt", "DelAltHandler")
 	self:RegisterChatCommand("getalts", "GetAltsHandler")
 	self:RegisterChatCommand("getmain", "GetMainHandler")
+	self:RegisterChatCommand("isalt", "IsAltHandler")
+	self:RegisterChatCommand("ismain", "IsMainHandler")
+	self:RegisterChatCommand("getallmains", "GetAllMainsHandler")
 
 	-- Create the LDB launcher
 	altsLDB = LDB:NewDataObject("Alts",{
@@ -849,6 +880,78 @@ function Alts:DelAltHandler(input)
 	else
 		self:Print(L["Usage: /delalt <alt> <main>"])
 	end	
+end
+
+function Alts:IsMainHandler(input)
+    local outputFmt = "%s is %sa main %s"
+    local sourceFmt = "(source: %s)"
+
+	if input and #input > 0 then
+		local name, source = string.match(input, "^(%S+) *(.*)")
+        local isMain
+		name = self:TitleCase(name)
+
+        local sourceUsed = ""
+		if source and #source > 0 then
+            isMain = LibAlts:IsMainForSource(name, source)
+            sourceUsed = sourceFmt:format(source)
+        else
+            isMain = LibAlts:IsMain(name)
+        end
+
+        local result = ""
+        if not isMain then result = "not " end
+
+        self:Print(outputFmt:format(name, result, sourceUsed))
+    else
+        self:Print("Usage: /ismain name <source>")
+    end
+end
+
+function Alts:IsAltHandler(input)
+    local outputFmt = "%s is %san alt %s"
+    local sourceFmt = "(source: %s)"
+
+	if input and #input > 0 then
+		local name, source = string.match(input, "^(%S+) *(.*)")
+        local isAlt
+		name = self:TitleCase(name)
+
+        local sourceUsed = ""
+		if source and #source > 0 then
+            isAlt = LibAlts:IsAltForSource(name, source)
+            sourceUsed = sourceFmt:format(source)
+        else
+            isAlt = LibAlts:IsAlt(name)
+        end
+
+        local result = ""
+        if not isAlt then result = "not " end
+
+        self:Print(outputFmt:format(name, result, sourceUsed))
+    else
+        self:Print("Usage: /isalt name <source>")
+    end
+end
+
+function Alts:GetAllMainsHandler(input)
+    local source = nil
+    local sourceName = "nil"
+	if input and #input > 0 then
+	    source = input
+        sourceName = source
+    end
+
+    local mains = {}
+    LibAlts:GetAllMainsForSource(mains, source)
+
+    if mains then
+        for k, v in pairs(mains) do
+            self:Print(v)
+        end
+        local resultFmt = "Found %d mains for source '%s'."
+        self:Print(resultFmt:format(#mains, sourceName))
+    end
 end
 
 function Alts:GetAltsHandler(input)
@@ -995,7 +1098,7 @@ function Alts:CreateAddMainFrame()
 	mainlabel:SetPoint("TOP", headertext, "BOTTOM", 0, -30)
 	mainlabel:SetPoint("LEFT", addmain, "LEFT", 20, 0)
 
-	local mainname = CreateFrame("EditBox", nil, addmain, "InputBoxTemplate")
+	local mainname = CreateFrame("EditBox", "Alts_AddMain_MainName", addmain, "InputBoxTemplate")
 	mainname:SetFontObject(ChatFontNormal)
 	mainname:SetWidth(150)
 	mainname:SetHeight(35)
@@ -1023,12 +1126,12 @@ function Alts:CreateAddMainFrame()
 	altlabel:SetText(L["Alt: "])
 	altlabel:SetPoint("TOPLEFT", mainlabel, "BOTTOMLEFT", 0, -30)
 
-	local altname = CreateFrame("EditBox", nil, addmain, "InputBoxTemplate")
+	local altname = CreateFrame("EditBox", "Alts_AddMain_AltName", addmain, "InputBoxTemplate")
 	altname:SetFontObject(ChatFontNormal)
 	altname:SetWidth(150)
 	altname:SetHeight(35)
-	altname:SetPoint("TOP", altlabel, "TOP")
 	altname:SetPoint("LEFT", mainname, "LEFT")
+	altname:SetPoint("TOP", altlabel, "TOP")
 	altname:SetScript("OnEnterPressed",
 	    function(this)
 	        local frame = this:GetParent()
@@ -1627,6 +1730,19 @@ function Alts:AddAltName(main, alt)
 	addAltFrame.editbox:SetText("")
 end
 
+function Alts:AddMainName(main, alt)
+	if main and #main > 0 and alt and #alt > 0 then
+	    if useLibAlts == true then
+	        LibAlts:SetAlt(main, alt)
+	    else
+		    self:SetAlt(main, alt)
+		end
+	end
+
+	addMainFrame.mainname:SetText("")
+	addMainFrame.altname:SetText("")
+end
+
 function Alts:OnEnable()
     -- Called when the addon is enabled
 
@@ -1639,8 +1755,8 @@ function Alts:OnEnable()
 	-- Register to receive the chat messages to watch for logons and who requests
 	self:RegisterEvent("CHAT_MSG_SYSTEM")
 
-    self:RegisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
-    self:RegisterEvent("BN_FRIEND_TOON_ONLINE")
+    --self:RegisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
+    --self:RegisterEvent("BN_FRIEND_TOON_ONLINE")
 
     -- Build reverse lookup tables for other guilds.
     for k,v in pairs(self.db.realm.altsBySource) do
@@ -1680,6 +1796,9 @@ function Alts:OnEnable()
 
 	-- Add the Edit Note menu item on unit frames
 	self:AddSetMainMenuItem()
+
+    -- Hook chat frames so we can edit the messages
+    self:HookChatFrames()
 end
 
 function Alts:OnDisable()
