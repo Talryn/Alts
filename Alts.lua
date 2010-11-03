@@ -787,6 +787,7 @@ function Alts:OnInitialize()
         LibAlts.RegisterCallback(self, "LibAlts_RemoveSource", "RemoveSourceEvent")
     end
 
+	self:RegisterChatCommand("alts", "AltsHandler")
 	self:RegisterChatCommand("setmain", "SetMainHandler")
 	self:RegisterChatCommand("delalt", "DelAltHandler")
 	self:RegisterChatCommand("getalts", "GetAltsHandler")
@@ -806,12 +807,15 @@ function Alts:OnInitialize()
     			if optionsFrame:IsVisible() then
     				optionsFrame:Hide()
     			else
+    			    self:HideAltsWindow()
     				InterfaceOptionsFrame_OpenToCategory(self.optionsFrame)
     			end
     		elseif button == "LeftButton" then
     			if self:IsVisible() then
     				self:HideAltsWindow()
     			else
+        			local optionsFrame = InterfaceOptionsFrame
+    			    optionsFrame:Hide()
     				self:AltsHandler("")
     			end
             end
@@ -1467,7 +1471,13 @@ function Alts:AltsHandler(input)
     end
 
 	altsFrame.table:SortData()
+
+    -- Hide the options frame if it is open.
+	local optionsFrame = InterfaceOptionsFrame
+    optionsFrame:Hide()
+
 	altsFrame:Show()
+	altsFrame:Raise()
 end
 
 function Alts:CreateEditAltsFrame()
