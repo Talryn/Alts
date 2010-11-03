@@ -47,7 +47,11 @@ local defaults = {
         singleLineTooltipDisplay = true,
 		wrapTooltip = true,
 		wrapTooltipLength = 50,
-		reportMissingMains = false
+		reportMissingMains = false,
+		lock_main_window = false,
+		remember_main_pos = true,
+		main_window_x = 0,
+		main_window_y = 0
 	},
 	realm = {
 	    alts = {},
@@ -260,9 +264,11 @@ function Alts:UpdateGuildAlts()
         --   * ALT: <name>
         --   * Alt of <name>
         --   * <name>
+        --   * AKA: <name>
         local altMatch1 = "(.-)'s? [Aa][Ll][Tt]"
         local altMatch2 = "[Aa][Ll][Tt]:%s*(%a+)"
         local altMatch3 = "[Aa][Ll][Tt] [Oo][Ff] (%a+)"
+        local altMatch4 = "[Aa][Kk][Aa]:%s*(%a+)"
 
         local funcs = {
             -- Check if the note format is "<name>'s alt"
@@ -276,6 +282,10 @@ function Alts:UpdateGuildAlts()
             -- Check if the note format is "Alt of <name>"
             function(val)
                 return val:match(altMatch3)
+            end,
+            -- Check if the note format is "AKA: <name>"
+            function(val)
+                return val:match(altMatch4)
             end,
             -- Check if the note is just a name
             function(val)
@@ -1194,7 +1204,12 @@ function Alts:CreateAltsFrame()
 	altswindow:SetToplevel(true)
 	altswindow:SetWidth(630)
 	altswindow:SetHeight(430)
-	altswindow:SetPoint("CENTER", UIParent)
+	if self.db.profile.remember_main_pos then
+        altswindow:SetPoint("CENTER", UIParent, "CENTER",
+            self.db.profile.main_window_x, self.db.profile.main_window_y)
+    else
+	    altswindow:SetPoint("CENTER", UIParent)
+    end
 	altswindow:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
@@ -1356,7 +1371,35 @@ function Alts:CreateAltsFrame()
 			end
 		end
 	)
-	
+
+    altswindow.lock = self.db.profile.lock_main_window
+    
+    altswindow:SetMovable()
+    altswindow:RegisterForDrag("LeftButton")
+    altswindow:SetScript("OnDragStart",
+        function(self,button)
+			if not self.lock then
+            	self:StartMoving()
+			end
+        end)
+    altswindow:SetScript("OnDragStop",
+        function(self)
+            self:StopMovingOrSizing()
+			if Alts.db.profile.remember_main_pos then
+    			local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    			local x, y = self:GetCenter()
+    			x, y = x * scale, y * scale
+    			x = x - GetScreenWidth()/2
+    			y = y - GetScreenHeight()/2
+    			x = x / self:GetScale()
+    			y = y / self:GetScale()
+    			Alts.db.profile.main_window_x, 
+    			    Alts.db.profile.main_window_y = x, y
+    			self:SetUserPlaced(false);
+            end
+        end)
+    altswindow:EnableMouse(true)
+
 	altswindow:Hide()
 	
 	return altswindow
