@@ -1105,6 +1105,18 @@ function Alts:CreateAddAltFrame()
 	addalt.charname = charname
 	addalt.editbox = editbox
 
+    addalt:SetMovable()
+    addalt:RegisterForDrag("LeftButton")
+    addalt:SetScript("OnDragStart",
+        function(this,button)
+        	this:StartMoving()
+        end)
+    addalt:SetScript("OnDragStop",
+        function(this)
+            this:StopMovingOrSizing()
+        end)
+    addalt:EnableMouse(true)
+
 	addalt:Hide()
 
 	return addalt
@@ -1216,6 +1228,18 @@ function Alts:CreateAddMainFrame()
 
 	addmain.mainname = mainname
 	addmain.altname = altname
+
+    addmain:SetMovable()
+    addmain:RegisterForDrag("LeftButton")
+    addmain:SetScript("OnDragStart",
+        function(this,button)
+        	this:StartMoving()
+        end)
+    addmain:SetScript("OnDragStop",
+        function(this)
+            this:StopMovingOrSizing()
+        end)
+    addmain:EnableMouse(true)
 
 	addmain:Hide()
 
@@ -1329,6 +1353,7 @@ function Alts:CreateAltsFrame()
 		    addMainFrame.mainname:SetText("")
 		    addMainFrame.altname:SetText("")
 		    addMainFrame:Show()
+		    addMainFrame:Raise()
 		end)
 
 	local deletebutton = CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
@@ -1344,6 +1369,7 @@ function Alts:CreateAltsFrame()
 				if row[1] and #row[1] > 0 then
 					confirmMainDeleteFrame.mainname:SetText(row[1])
 					confirmMainDeleteFrame:Show()
+					confirmMainDeleteFrame:Raise()
 					altsFrame:Hide()
 				end
 			end
@@ -1397,7 +1423,7 @@ function Alts:CreateAltsFrame()
 	)
 
     altswindow.lock = self.db.profile.lock_main_window
-    
+
     altswindow:SetMovable()
     altswindow:RegisterForDrag("LeftButton")
     altswindow:SetScript("OnDragStart",
@@ -1544,6 +1570,18 @@ function Alts:CreateEditAltsFrame()
 	table:EnableSelection(true)
 	table:SetData(EditAltsTable, true)
 
+    editaltswindow:SetMovable()
+    editaltswindow:RegisterForDrag("LeftButton")
+    editaltswindow:SetScript("OnDragStart",
+        function(this,button)
+        	this:StartMoving()
+        end)
+    editaltswindow:SetScript("OnDragStop",
+        function(this)
+            this:StopMovingOrSizing()
+        end)
+    editaltswindow:EnableMouse(true)
+
 	editaltswindow:Hide()
 
 	return editaltswindow
@@ -1610,6 +1648,18 @@ function Alts:CreateSetMainFrame()
 
 	setmain.charname = charname
 	setmain.editbox = editbox
+
+    setmain:SetMovable()
+    setmain:RegisterForDrag("LeftButton")
+    setmain:SetScript("OnDragStart",
+        function(this,button)
+        	this:StartMoving()
+        end)
+    setmain:SetScript("OnDragStop",
+        function(this)
+            this:StopMovingOrSizing()
+        end)
+    setmain:EnableMouse(true)
 
 	setmain:Hide()
 
@@ -1680,7 +1730,19 @@ function Alts:CreateConfirmDeleteFrame()
 
 	deletewindow.mainname = mainname
     deletewindow.altname = altname
-    
+
+    deletewindow:SetMovable()
+    deletewindow:RegisterForDrag("LeftButton")
+    deletewindow:SetScript("OnDragStart",
+        function(this,button)
+        	this:StartMoving()
+        end)
+    deletewindow:SetScript("OnDragStop",
+        function(this)
+            this:StopMovingOrSizing()
+        end)
+    deletewindow:EnableMouse(true)
+
 	deletewindow:Hide()
 
 	return deletewindow
@@ -1740,7 +1802,19 @@ function Alts:CreateConfirmMainDeleteFrame()
 	    end)
 
 	deletewindow.mainname = mainname
-    
+
+    deletewindow:SetMovable()
+    deletewindow:RegisterForDrag("LeftButton")
+    deletewindow:SetScript("OnDragStart",
+        function(this,button)
+        	this:StartMoving()
+        end)
+    deletewindow:SetScript("OnDragStop",
+        function(this)
+            this:StopMovingOrSizing()
+        end)
+    deletewindow:EnableMouse(true)
+
 	deletewindow:Hide()
 
 	return deletewindow
@@ -1768,6 +1842,7 @@ function Alts:EditAltsHandler(input)
 
         editAltsFrame.table:SortData()
 		editAltsFrame:Show()
+		editAltsFrame:Raise()
 	end	
 end
 
