@@ -28,7 +28,7 @@ local tinsert, tremove, tContains = tinsert, tremove, tContains
 local tconcat = table.concat
 local pairs, ipairs, unpack = pairs, ipairs, unpack
 
--- Functions defined at the end of the file
+-- Functions defined at the end of the file.
 local formatCharName
 local wrap
 
