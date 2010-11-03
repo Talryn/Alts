@@ -707,8 +707,32 @@ function Alts:GetOptions()
                     get = function(info) return self.db.profile.singleLineTooltipDisplay end,
         			order = 150
                 },
-        		displayheaderTooltip = {
+        		headerMainWindow = {
         			order = 200,
+        			type = "header",
+        			name = L["Main Window"],
+        		},
+                lock_main_window = {
+                    name = L["Lock"],
+                    desc = L["Lock_OptionDesc"],
+                    type = "toggle",
+                    set = function(info,val)
+                        self.db.profile.lock_main_window = val
+                        altsFrame.lock = val
+                    end,
+                    get = function(info) return self.db.profile.lock_main_window end,
+        			order = 210
+                },
+                remember_main_pos = {
+                    name = L["Remember Position"],
+                    desc = L["RememberPosition_OptionDesc"],
+                    type = "toggle",
+                    set = function(info,val) self.db.profile.remember_main_pos = val end,
+                    get = function(info) return self.db.profile.remember_main_pos end,
+        			order = 220
+                },
+        		displayheaderTooltip = {
+        			order = 300,
         			type = "header",
         			name = L["Tooltip Options"],
         		},
@@ -718,7 +742,7 @@ function Alts:GetOptions()
                     type = "toggle",
                     set = function(info,val) self.db.profile.wrapTooltip = val end,
                     get = function(info) return self.db.profile.wrapTooltip end,
-        			order = 210
+        			order = 310
                 },
                 wrapTooltipLength = {
                     name = L["Tooltip Wrap Length"],
@@ -729,7 +753,7 @@ function Alts:GetOptions()
         			step = 1,
                     set = function(info,val) self.db.profile.wrapTooltipLength = val end,
                     get = function(info) return self.db.profile.wrapTooltipLength end,
-        			order = 220
+        			order = 320
                 },
             }
         }
