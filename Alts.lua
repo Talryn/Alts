@@ -43,6 +43,7 @@ local defaults = {
 		showAltsInTooltip = true,
         showInfoOnLogon = true,
         showInfoOnWho = true,
+        showMainsInChat = true,
         singleLineChatDisplay = true,
         singleLineTooltipDisplay = true,
 		wrapTooltip = true,
@@ -60,6 +61,7 @@ local defaults = {
 }
 
 local options
+local playerName = ""
 local useLibAlts = false
 local altsLDB = nil
 local altsFrame = nil
@@ -98,8 +100,17 @@ function Alts:HookChatFrames()
     end
 end
 
+function Alts:UnhookChatFrames()
+    for i = 1, NUM_CHAT_WINDOWS do
+        local chatFrame = _G["ChatFrame" .. i]
+        if chatFrame ~= COMBATLOG then
+            self:Unhook(chatFrame, "AddMessage")
+        end
+    end
+end
+
 local function AddMainNameForChat(message, name)
-    if name and #name > 0 then
+    if name and #name > 0 and name ~= playerName then
         local main = LibAlts:GetMain(name)
         if main and #main > 0 then
             local messageFmt = "%s (%s)"
@@ -659,6 +670,21 @@ function Alts:GetOptions()
         			type = "header",
         			name = L["Display Options"],
         		},
+        	    showMainsInChat = {
+                    name = L["Main Names in Chat"],
+                    desc = L["MainNamesInChat_OptionDesc"],
+                    type = "toggle",
+                    set = function(info, val)
+                            self.db.profile.showMainsInChat = val
+                            if val then
+                                self:HookChatFrames()
+                            else
+                                self:UnhookChatFrames()
+                            end
+                        end,
+                    get = function(info) return self.db.profile.showMainsInChat end,
+        			order = 105
+                },
         	    mainInTooltip = {
                     name = L["Main Name In Tooltips"],
                     desc = L["Toggles the display of the main name in tooltips"],
@@ -831,6 +857,8 @@ function Alts:OnInitialize()
 		end
 	})
 	icon:Register("AltsLDB", altsLDB, self.db.profile.minimap)
+	
+	playerName = UnitName("player")
 end
 
 function Alts:SetMainHandler(input)
@@ -1950,15 +1978,16 @@ function Alts:OnEnable()
 	self:AddSetMainMenuItem()
 
     -- Hook chat frames so we can edit the messages
-    self:HookChatFrames()
+    if self.db.profile.showMainsInChat then
+        self:HookChatFrames()
+    end
 end
 
 function Alts:OnDisable()
-    -- Called when the addon is disabled
 	self:UnregisterEvent("CHAT_MSG_SYSTEM")
-	
 	-- Remove the menu items
 	self:RemoveSetMainMenuItem()
+    self:UnhookChatFrames()
 end
 
 function Alts:AddSetMainMenuItem()
