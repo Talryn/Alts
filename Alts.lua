@@ -52,11 +52,14 @@ local defaults = {
 		lock_main_window = false,
 		remember_main_pos = true,
 		main_window_x = 0,
-		main_window_y = 0
+		main_window_y = 0,
+		saveGuild = true,
 	},
 	realm = {
 	    alts = {},
-	    altsBySource = {}
+	    altsBySource = {},
+	    guilds = {},
+		guildLog = {},
 	}
 }
 
@@ -235,7 +238,7 @@ function Alts:PushLibAltsData()
     end
 end
 
-function Alts:UpdateGuildAlts()
+function Alts:UpdateGuild()
     if not self.db.profile.autoGuildImport then return end
     
     local guildName = GetGuildInfo("player")
@@ -258,15 +261,61 @@ function Alts:UpdateGuildAlts()
     -- Build a list of the guild members
     -- Using it later to verify that names are in the guild
     for i = 1, numMembers do
-        local name = GetGuildRosterInfo(i)
-        guildMembers[LibAlts:TitleCase(name)] = true
+        local name, rank, rankIndex, level, class, zone, publicnote,  
+            officernote, online, status, classFileName, achPts, 
+            achRank, isMobile = GetGuildRosterInfo(i)
+        local years, months, days, hours = GetGuildRosterLastOnline(i)
+
+        local lastOnline = 0
+        if online then
+            lastOnline = time()
+        elseif years and months and days and hours then
+            local diff = (((years*365)+(months*30)+days)*24+hours)*60*60
+            lastOnline = time() - diff
+        end
+
+        guildMembers[LibAlts:TitleCase(name)] = lastOnline
+    end
+
+    -- Save the information if we're tracking the guild.
+    if self.db.profile.saveGuild then
+        -- Before updating the saved guild info, check for the differences.
+        self.db.realm.guilds[guildName] = self.db.realm.guilds[guildName] or {}
+        self.db.realm.guildLog[guildName] = self.db.realm.guildLog[guildName] or {}
+
+        if self.db.realm.guilds[guildName] ~= {} then
+            -- Compare the new guild roster to the old
+            local name, lastOnline
+            for name, lastOnline in pairs(guildMembers) do
+                if self.db.realm.guilds[guildName][name] == nil then
+                    self:Print(name.." joined the guild.")
+                    local joinFmt = "%s  %s joined the guild."
+                    tinsert(self.db.realm.guildLog[guildName],
+                        joinFmt:format(date("%Y/%m/%d %H:%M"), name))
+                end 
+            end
+
+            for name, lastOnline in pairs(self.db.realm.guilds[guildName]) do
+                if guildMembers[name] == nil then
+                    self:Print(name.." left the guild.")
+                    local leaveFmt = "%s  %s left the guild."
+                    tinsert(self.db.realm.guildLog[guildName],
+                        leaveFmt:format(date("%Y/%m/%d %H:%M"), name))
+                end 
+            end
+        end
+
+        -- Update the saved guild information
+        self.db.realm.guilds[guildName] = guildMembers
     end
 
     -- Walk through the list and look for alt names
     for i = 1, numMembers do
-        local name, rank, rankIndex, level, class, zone, publicnote, officernote, 
-            online, status = GetGuildRosterInfo(i)
-        
+        local name, rank, rankIndex, level, class, zone, publicnote,  
+            officernote, online, status, classFileName, achPts, 
+            achRank, isMobile = GetGuildRosterInfo(i)
+        local years, months, days, hours = GetGuildRosterLastOnline(i)
+
         name = self:TitleCase(name)
 
         local main
@@ -1998,6 +2047,7 @@ function Alts:AddSetMainMenuItem()
 	tinsert(UnitPopupMenus["PLAYER"], (#UnitPopupMenus["PLAYER"])-1, "SET_MAIN")
 	tinsert(UnitPopupMenus["PARTY"], (#UnitPopupMenus["PARTY"])-1, "SET_MAIN")
 	tinsert(UnitPopupMenus["FRIEND"], (#UnitPopupMenus["FRIEND"])-1, "SET_MAIN")
+	tinsert(UnitPopupMenus["FRIEND_OFFLINE"], (#UnitPopupMenus["FRIEND_OFFLINE"])-1, "SET_MAIN")
 	tinsert(UnitPopupMenus["RAID_PLAYER"], (#UnitPopupMenus["RAID_PLAYER"])-1, "SET_MAIN")
 end
 
@@ -2157,7 +2207,7 @@ end
 
 function Alts:GUILD_ROSTER_UPDATE(event, message)
     self:UnregisterEvent("GUILD_ROSTER_UPDATE")
-    self:UpdateGuildAlts()
+    self:UpdateGuild()
 end
 
 function Alts:BN_FRIEND_ACCOUNT_ONLINE(event, message)
