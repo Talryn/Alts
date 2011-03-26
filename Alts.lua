@@ -1,4 +1,5 @@
 Alts = LibStub("AceAddon-3.0"):NewAddon("Alts", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+local AGU = LibStub("AceGUI-3.0")
 
 local ADDON_NAME = ...
 local ADDON_VERSION = "@project-version@"
@@ -25,7 +26,7 @@ local WHITE = "|cffffffff"
 
 -- Use local versions of standard LUA items for performance
 local tinsert, tremove, tContains = tinsert, tremove, tContains
-local tconcat = table.concat
+local tconcat, tsort = table.concat, table.sort
 local pairs, ipairs, unpack = pairs, ipairs, unpack
 
 -- Functions defined at the end of the file.
@@ -53,13 +54,34 @@ local defaults = {
 		remember_main_pos = true,
 		main_window_x = 0,
 		main_window_y = 0,
+		remember_contrib_pos = true,
+		contrib_window_x = 0,
+		contrib_window_y = 0,
 		saveGuild = true,
+		exportUseName = true,
+		exportUseRank = true,
+		exportUseLevel = true,
+		exportUseClass = true,
+		exportUsePublicNote = true,
+		exportUseOfficerNote = true,
+		exportUseLastOnline = true,
+		exportUseAchvPoints = true,
+		exportUseWeeklyXP = true,
+		exportUseTotalXP = true,
+		exportUseAlts = true,
+		exportEscape = true,
+		exportOnlyMains = true,
+		exportOnlyGuildAlts = true,
 	},
 	realm = {
 	    alts = {},
 	    altsBySource = {},
 	    guilds = {},
 		guildLog = {},
+	},
+	char = {
+	    friends = {},
+	    ignores = {},
 	}
 }
 
@@ -68,6 +90,7 @@ local playerName = ""
 local useLibAlts = false
 local altsLDB = nil
 local altsFrame = nil
+local contribFrame = nil
 local setMainFrame = nil
 local addAltFrame = nil
 local addMainFrame = nil
@@ -79,6 +102,10 @@ local MainsBySource = {}
 local AllMains = {}
 local MainsTable = {}
 local EditAltsTable = {}
+local guildWeekly = {}
+local guildTotal = {}
+local guildWeeklyData = {}
+local guildTotalData = {}
 
 local function ReverseTable(table)
 	local reverse = {}
@@ -238,6 +265,98 @@ function Alts:PushLibAltsData()
     end
 end
 
+function Alts:CheckAndUpdateFriends()
+    local friends = {}
+    local numFriends = GetNumFriends()
+    local strFmt = L["FriendsLog_RemovedFriend"]
+    
+    local name, level, class, area, connected, status, note, RAF
+    
+    for i = 1, numFriends do
+        name, level, class, area, connected, status, note, RAF = GetFriendInfo(i)
+        friends[name] = (note or "")
+    end
+    
+    -- Check for removed friends
+    for name, note in pairs(self.db.char.friends) do
+        if friends[name] == nil then
+            self:Print(strFmt:format(name))
+        end
+    end
+
+    self.db.char.friends = friends
+end
+
+function Alts:CheckAndUpdateIgnores()
+    local ignores = {}
+    local numIgnores = GetNumIgnores()
+    local strFmt = L["IgnoreLog_RemovedIgnore"]
+    
+    local name, value
+    
+    for i = 1, numIgnores do
+        name = GetIgnoreName(i)
+        if name ~= "?" then
+            ignores[name] = true
+        end
+    end
+    
+    -- Check for removed ignores
+    for name, value in pairs(self.db.char.ignores) do
+        if ignores[name] == nil then
+            self:Print(strFmt:format(name))
+        end
+    end
+
+    self.db.char.ignores = ignores
+end
+
+function Alts:GuildContrib()
+    wipe(guildWeekly)
+    wipe(guildTotal)
+    
+    local guildName = GetGuildInfo("player")
+    local numMembers = GetNumGuildMembers(true)
+    
+    if not guildName or numMembers == 0 then return end
+
+    local source = LibAlts.GUILD_PREFIX..guildName
+
+    for i = 1, numMembers do
+        local name, rank, rankIndex, level, class, zone, publicnote,  
+            officernote, online, status, classFileName, achPts, 
+            achRank, isMobile = GetGuildRosterInfo(i)
+
+        local years, months, days, hours = GetGuildRosterLastOnline(i)
+        local lastOnline = 0
+        if online then
+            lastOnline = time()
+        elseif years and months and days and hours then
+            local diff = (((years*365)+(months*30)+days)*24+hours)*60*60
+            lastOnline = time() - diff
+        end
+
+        local weeklyXP, totalXP, weeklyRank, totalRank = GetGuildRosterContribution(i)
+
+        local main = (LibAlts:GetMainForSource(name, source) or name)
+
+        guildWeekly[main] = (guildWeekly[main] or 0) + weeklyXP
+        guildTotal[main] = (guildTotal[main] or 0) + totalXP
+    end
+
+    wipe(guildWeeklyData)
+    for name, xp in pairs(guildWeekly) do
+        tinsert(guildWeeklyData, {name, xp})
+        tsort(guildWeeklyData, function(a,b) return a[2] > b[2] end)
+    end
+
+    wipe(guildTotalData)
+    for name, xp in pairs(guildTotal) do
+        tinsert(guildTotalData, {name, xp})
+        tsort(guildTotalData, function(a,b) return a[2] > b[2] end)
+    end
+end
+
 function Alts:UpdateGuild()
     if not self.db.profile.autoGuildImport then return end
     
@@ -286,21 +405,23 @@ function Alts:UpdateGuild()
         if self.db.realm.guilds[guildName] ~= {} then
             -- Compare the new guild roster to the old
             local name, lastOnline
+            local joinFmt = "%s "..L["GuildLog_JoinedGuild"]
+            local joinLogFmt = "%s  %s "..L["GuildLog_JoinedGuild"]
             for name, lastOnline in pairs(guildMembers) do
                 if self.db.realm.guilds[guildName][name] == nil then
-                    self:Print(name.." joined the guild.")
-                    local joinFmt = "%s  %s joined the guild."
+                    self:Print(joinFmt:format(name))
                     tinsert(self.db.realm.guildLog[guildName],
-                        joinFmt:format(date("%Y/%m/%d %H:%M"), name))
+                        joinLogFmt:format(date("%Y/%m/%d %H:%M"), name))
                 end 
             end
 
+            local leaveFmt = "%s "..L["GuildLog_LeftGuild"]
+            local leaveLogFmt = "%s  %s "..L["GuildLog_LeftGuild"]
             for name, lastOnline in pairs(self.db.realm.guilds[guildName]) do
                 if guildMembers[name] == nil then
-                    self:Print(name.." left the guild.")
-                    local leaveFmt = "%s  %s left the guild."
+                    self:Print(leaveFmt:format(name))
                     tinsert(self.db.realm.guildLog[guildName],
-                        leaveFmt:format(date("%Y/%m/%d %H:%M"), name))
+                        leaveLogFmt:format(date("%Y/%m/%d %H:%M"), name))
                 end 
             end
         end
@@ -325,10 +446,12 @@ function Alts:UpdateGuild()
         --   * Alt of <name>
         --   * <name>
         --   * AKA: <name>
+        --   * (<name>)
         local altMatch1 = "(.-)'s? [Aa][Ll][Tt]"
         local altMatch2 = "[Aa][Ll][Tt]:%s*(%a+)"
         local altMatch3 = "[Aa][Ll][Tt] [Oo][Ff] (%a+)"
         local altMatch4 = "[Aa][Kk][Aa]:%s*(%a+)"
+        local altMatch5 = "[(](%a+)[)]"
 
         local funcs = {
             -- Check if the note format is "<name>'s alt"
@@ -346,6 +469,10 @@ function Alts:UpdateGuild()
             -- Check if the note format is "AKA: <name>"
             function(val)
                 return val:match(altMatch4)
+            end,
+            -- Check if the note format is "(<name>)"
+            function(val)
+                return val:match(altMatch5)
             end,
             -- Check if the note is just a name
             function(val)
@@ -830,6 +957,48 @@ function Alts:GetOptions()
                     get = function(info) return self.db.profile.wrapTooltipLength end,
         			order = 320
                 },
+        		headerLogs = {
+        			order = 400,
+        			type = "header",
+        			name = "Log Options",
+        		},
+                guildLogButton = {
+                    name = L["Guild Log"],
+                    desc = L["GuildLog_OptionDesc"],
+                    type = "execute",
+                    width = "normal",
+                    func = function()
+                    	local optionsFrame = InterfaceOptionsFrame
+                        optionsFrame:Hide()
+                        self:GuildLogHandler("")
+                    end,
+        			order = 410
+                },
+                guildExportButton = {
+                    name = L["Guild Export"],
+                    desc = L["GuildExport_OptionDesc"],
+                    type = "execute",
+                    width = "normal",
+                    func = function()
+                    	local optionsFrame = InterfaceOptionsFrame
+                        optionsFrame:Hide()
+                        self:GuildExportHandler("")
+                    end,
+        			order = 420
+                },
+                guildWeeklyButton = {
+                    name = L["Guild Contribution"],
+                    desc = L["GuildContribution_OptionDesc"],
+                    type = "execute",
+                    width = "normal",
+                    func = function()
+                    	local optionsFrame = InterfaceOptionsFrame
+                        optionsFrame:Hide()
+                        self:GuildContribHandler("")
+                    end,
+        			order = 430
+                },
+
             }
         }
     end
@@ -870,6 +1039,8 @@ function Alts:OnInitialize()
 	self:RegisterChatCommand("isalt", "IsAltHandler")
 	self:RegisterChatCommand("ismain", "IsMainHandler")
 	self:RegisterChatCommand("getallmains", "GetAllMainsHandler")
+	self:RegisterChatCommand("guildlog", "GuildLogHandler")
+	self:RegisterChatCommand("guildexport", "GuildExportHandler")
 
 	-- Create the LDB launcher
 	altsLDB = LDB:NewDataObject("Alts",{
@@ -1116,6 +1287,357 @@ function Alts:AddAltHandler(main)
 	end
 end
 
+local GuildLogFrame = nil
+function Alts:ShowGuildLogFrame()
+    if GuildLogFrame then return end
+
+	local frame = AGU:Create("Frame")
+	frame:SetTitle(L["Guild Log"])
+	frame:SetWidth(650)
+	frame:SetHeight(450)
+    frame:SetLayout("Flow")
+	frame:SetCallback("OnClose", function(widget)
+		widget:ReleaseChildren()
+		widget:Release()
+		GuildLogFrame = nil
+	end)
+
+    GuildLogFrame = frame
+
+    local limit = AGU:Create("CheckBox")
+    limit:SetLabel("Limit to 50 most recent entries")
+    limit:SetValue(true)
+    limit:SetFullWidth(true)
+    limit:SetCallback("OnValueChanged",
+        function(widget, event, value)
+            GuildLogFrame.update(value)
+        end
+    )
+    frame:AddChild(limit)
+
+    local simple = AGU:Create("SimpleGroup")
+    simple:SetLayout("Fill")
+    simple:SetFullHeight(true)
+    simple:SetFullWidth(true)
+    frame:AddChild(simple)
+
+    local scroll = AGU:Create("ScrollFrame")
+    simple:AddChild(scroll)
+    GuildLogFrame.scroll = scroll
+
+    GuildLogFrame.update = function(value)
+        local guildName = GetGuildInfo("player")
+        if not guildName then return end
+        if not self.db.realm.guildLog[guildName] then return end
+
+        scroll:ReleaseChildren()
+        scroll:PauseLayout()
+        local count = 0
+        local entries = #self.db.realm.guildLog[guildName]
+        for i = entries, 1, -1 do
+            local text = self.db.realm.guildLog[guildName][i]
+            if text then
+                local label = AGU:Create("Label")
+                label:SetText(text)
+                label:SetFullWidth(true)
+                scroll:AddChild(label)
+                count = count + 1
+            end
+            
+            if value == true and count == 50 then break end
+        end
+        scroll:ResumeLayout()
+        scroll:DoLayout()
+        local statusFmt = L["Entries_Displayed"]
+        frame:SetStatusText(statusFmt:format(count, entries))
+    end
+    
+    GuildLogFrame.update(true)
+end
+
+local GuildExportFrame = nil
+function Alts:ShowGuildExportFrame()
+    if GuildExportFrame then return end
+
+	local frame = AGU:Create("Frame")
+	frame:SetTitle(L["Guild Export"])
+	frame:SetWidth(650)
+	frame:SetHeight(550)
+    frame:SetLayout("Flow")
+	frame:SetCallback("OnClose", function(widget)
+		widget:ReleaseChildren()
+		widget:Release()
+		GuildExportFrame = nil
+	end)
+
+    GuildExportFrame = frame
+
+    local multiline = AGU:Create("MultiLineEditBox")
+    multiline:SetLabel(L["GuildExport_ExportLabel"])
+    multiline:SetNumLines(10)
+    multiline:SetMaxLetters(0)
+    multiline:SetFullWidth(true)
+    frame:AddChild(multiline)
+    frame.multiline = multiline
+
+    local fieldsHeading =  AGU:Create("Heading")
+    fieldsHeading:SetText("Fields to Export")
+    fieldsHeading:SetFullWidth(true)
+    frame:AddChild(fieldsHeading)
+
+    local nameOption = AGU:Create("CheckBox")
+    nameOption:SetLabel(L["Name"])
+    nameOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseName = value
+        end
+    )
+    nameOption:SetValue(self.db.profile.exportUseName)
+    frame:AddChild(nameOption)
+
+    local levelOption = AGU:Create("CheckBox")
+    levelOption:SetLabel(L["Level"])
+    levelOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseLevel = value
+        end
+    )
+    levelOption:SetValue(self.db.profile.exportUseLevel)
+    frame:AddChild(levelOption)
+
+    local rankOption = AGU:Create("CheckBox")
+    rankOption:SetLabel(L["Rank"])
+    rankOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseRank = value
+        end
+    )
+    rankOption:SetValue(self.db.profile.exportUseRank)
+    frame:AddChild(rankOption)
+
+    local classOption = AGU:Create("CheckBox")
+    classOption:SetLabel(L["Class"])
+    classOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseClass = value
+        end
+    )
+    classOption:SetValue(self.db.profile.exportUseClass)
+    frame:AddChild(classOption)
+
+    local publicNoteOption = AGU:Create("CheckBox")
+    publicNoteOption:SetLabel(L["Public Note"])
+    publicNoteOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUsePublicNote = value
+        end
+    )
+    publicNoteOption:SetValue(self.db.profile.exportUsePublicNote)
+    frame:AddChild(publicNoteOption)
+
+    local officerNoteOption = AGU:Create("CheckBox")
+    officerNoteOption:SetLabel(L["Officer Note"])
+    officerNoteOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseOfficerNote = value
+        end
+    )
+    officerNoteOption:SetValue(self.db.profile.exportUseOfficerNote)
+    frame:AddChild(officerNoteOption)
+
+    local lastOnlineOption = AGU:Create("CheckBox")
+    lastOnlineOption:SetLabel(L["Last Online"])
+    lastOnlineOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseLastOnline = value
+        end
+    )
+    lastOnlineOption:SetValue(self.db.profile.exportUseLastOnline)
+    frame:AddChild(lastOnlineOption)
+
+    local achvPointsOption = AGU:Create("CheckBox")
+    achvPointsOption:SetLabel(L["Achievement Points"])
+    achvPointsOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseAchvPoints = value
+        end
+    )
+    achvPointsOption:SetValue(self.db.profile.exportUseAchvPoints)
+    frame:AddChild(achvPointsOption)
+
+    local weeklyXPOption = AGU:Create("CheckBox")
+    weeklyXPOption:SetLabel(L["Weekly XP"])
+    weeklyXPOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseWeeklyXP = value
+        end
+    )
+    weeklyXPOption:SetValue(self.db.profile.exportUseWeeklyXP)
+    frame:AddChild(weeklyXPOption)
+
+    local totalXPOption = AGU:Create("CheckBox")
+    totalXPOption:SetLabel(L["Total XP"])
+    totalXPOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseTotalXP = value
+        end
+    )
+    totalXPOption:SetValue(self.db.profile.exportUseTotalXP)
+    frame:AddChild(totalXPOption)
+
+    local altsOption = AGU:Create("CheckBox")
+    altsOption:SetLabel(L["Alts"])
+    altsOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportUseAlts = value
+        end
+    )
+    altsOption:SetValue(self.db.profile.exportUseAlts)
+    frame:AddChild(altsOption)
+
+    local optionsHeading = AGU:Create("Heading")
+    optionsHeading:SetText("Options")
+    optionsHeading:SetFullWidth(true)
+    frame:AddChild(optionsHeading)
+
+    local escapeOption = AGU:Create("CheckBox")
+    escapeOption:SetLabel(L["GuildExport_Escape"])
+    escapeOption:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportEscape = value
+        end
+    )
+    escapeOption:SetValue(self.db.profile.exportEscape)
+    frame:AddChild(escapeOption)
+
+    local onlyMains = AGU:Create("CheckBox")
+    onlyMains:SetLabel(L["GuildExport_OnlyMains"])
+    onlyMains:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportOnlyMains = value
+        end
+    )
+    onlyMains:SetValue(self.db.profile.exportOnlyMains)
+    frame:AddChild(onlyMains)
+
+    local guildAlts = AGU:Create("CheckBox")
+    guildAlts:SetLabel(L["GuildExport_OnlyGuildAlts"])
+    guildAlts:SetCallback("OnValueChanged", 
+        function(widget, event, value)
+            self.db.profile.exportOnlyGuildAlts = value
+        end
+    )
+    guildAlts:SetValue(self.db.profile.exportOnlyGuildAlts)
+    frame:AddChild(guildAlts)
+
+    local spacer = AGU:Create("Label")
+    spacer:SetText(" ")
+    spacer:SetFullWidth(true)
+    frame:AddChild(spacer)
+
+    local exportButton = AGU:Create("Button")
+    exportButton:SetText(L["Export"])
+    exportButton:SetCallback("OnClick",
+        function(widget)
+            local guildExportText = Alts:GenerateGuildExport(
+                self.db.profile.exportUseName,
+                self.db.profile.exportUseLevel,
+                self.db.profile.exportUseRank,
+                self.db.profile.exportUseClass,
+                self.db.profile.exportUsePublicNote,
+                self.db.profile.exportUseOfficerNote,
+                self.db.profile.exportUseLastOnline,
+                self.db.profile.exportUseAchvPoints,
+                self.db.profile.exportUseWeeklyXP,
+                self.db.profile.exportUseTotalXP,
+                self.db.profile.exportUseAlts,
+                self.db.profile.exportEscape
+            )
+            frame.multiline:SetText(guildExportText)
+        end)
+    frame:AddChild(exportButton)
+end
+
+local ContribsFrame = nil
+function Alts:ShowContribFrame()
+    if ContribsFrame then return end
+
+	local frame = AGU:Create("Frame")
+	frame:SetTitle("Guild Contributions By Main")
+	frame:SetWidth(400)
+	frame:SetHeight(350)
+    frame:SetLayout("Flow")
+	frame:SetCallback("OnClose", function(widget)
+		widget:ReleaseChildren()
+		widget:Release()
+		ContribsFrame = nil
+	end)
+
+    ContribsFrame = frame
+
+	local periodDropdown = AGU:Create("Dropdown")
+	periodDropdown:SetLabel("Period")
+	periodDropdown.list = {}
+	periodDropdown:AddItem("Weekly", "Weekly")
+	periodDropdown:AddItem("Total", "Total")
+	periodDropdown:SetValue("Total")
+	periodDropdown:SetWidth(150)
+	periodDropdown:SetCallback("OnValueChanged",
+        function(widget, event, value)
+            ContribsFrame.update(value)
+        end
+	)
+	frame:AddChild(periodDropdown)
+
+    local simple = AGU:Create("SimpleGroup")
+    simple:SetLayout("Fill")
+    simple:SetFullHeight(true)
+    simple:SetFullWidth(true)
+    frame:AddChild(simple)
+
+    local scroll = AGU:Create("ScrollFrame")
+    scroll:SetLayout("Flow")
+    simple:AddChild(scroll)
+    ContribsFrame.scroll = scroll
+
+    ContribsFrame.update = function(value)
+        self:GuildContrib()
+        scroll:ReleaseChildren()
+        scroll:PauseLayout()
+        
+        local table
+        if value == "Weekly" then
+            table = guildWeeklyData
+        else
+            table = guildTotalData
+        end
+
+        for i, data in ipairs(table) do
+            local name = data[1]
+            local xp = data[2]
+
+            local nameField = AGU:Create("Label")
+            nameField:SetText(name)
+            nameField:SetRelativeWidth(0.5)
+            scroll:AddChild(nameField)
+            local xpField = AGU:Create("Label")
+            xpField:SetText(xp)
+            xpField:SetRelativeWidth(0.5)
+            xpField.label:SetJustifyH("RIGHT")
+            xpField:SetCallback("OnRelease",
+                function(widget)
+                    widget.label:SetJustifyH("LEFT")
+                end
+            )
+            scroll:AddChild(xpField)
+        end
+        scroll:ResumeLayout()
+        scroll:DoLayout()
+    end
+    
+    ContribsFrame.update("Total")
+end
+
 function Alts:CreateAddAltFrame()
 	local addalt = CreateFrame("Frame", "Alts_AddAltWindow", UIParent)
 	addalt:SetFrameStrata("DIALOG")
@@ -1325,6 +1847,127 @@ function Alts:CreateAddMainFrame()
 	addmain:Hide()
 
 	return addmain
+end
+
+function Alts:CreateContribFrame()
+	local window = CreateFrame("Frame", "Alts_ContribWindow", UIParent)
+	window:SetFrameStrata("DIALOG")
+	window:SetToplevel(true)
+	window:SetWidth(430)
+	window:SetHeight(370)
+	if self.db.profile.remember_contrib_pos then
+        window:SetPoint("CENTER", UIParent, "CENTER",
+            self.db.profile.contrib_window_x, self.db.profile.contrib_window_y)
+    else
+	    window:SetPoint("CENTER", UIParent)
+    end
+	window:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background", 
+	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
+		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
+
+	local cols = {}
+	cols[1] = {
+		["name"] = L["Main Name"],
+		["width"] = 180,
+		["align"] = "LEFT",
+		["color"] = {
+			["r"] = 1.0,
+			["g"] = 1.0,
+			["b"] = 1.0,
+			["a"] = 1.0
+		},
+		["colorargs"] = nil,
+		["bgcolor"] = {
+			["r"] = 0.0,
+			["g"] = 0.0,
+			["b"] = 0.0,
+			["a"] = 1.0
+		},
+		["DoCellUpdate"] = nil,
+	}
+	cols[2] = {
+		["name"] = L["Experience"],
+		["width"] = 150,
+		["align"] = "RIGHT",
+		["color"] = {
+			["r"] = 1.0,
+			["g"] = 1.0,
+			["b"] = 1.0,
+			["a"] = 1.0
+		},
+		["colorargs"] = nil,
+		["bgcolor"] = {
+			["r"] = 0.0,
+			["g"] = 0.0,
+			["b"] = 0.0,
+			["a"] = 1.0
+		},
+		["defaultsort"] = "asc",
+		["sort"] = "asc",
+		["DoCellUpdate"] = nil,
+	}
+
+	local table = ScrollingTable:CreateST(cols, 15, nil, nil, window);
+
+	local headertext = window:CreateFontString("Alts_Contrib_HeaderText", window, "GameFontNormalLarge")
+	headertext:SetPoint("TOP", window, "TOP", 0, -20)
+	headertext:SetText(L["Guild Contribution"])
+
+	table.frame:SetPoint("TOP", headertext, "BOTTOM", 0, -40)
+	table.frame:SetPoint("LEFT", window, "LEFT", 40, 0)
+
+	local closebutton = CreateFrame("Button", nil, window, "UIPanelButtonTemplate")
+	closebutton:SetText(L["Close"])
+	closebutton:SetWidth(90)
+	closebutton:SetHeight(20)
+	closebutton:SetPoint("BOTTOM", window, "BOTTOM", 0, 20)
+	closebutton:SetScript("OnClick", function(this) this:GetParent():Hide(); end)
+
+	window.table = table
+
+    table:RegisterEvents({
+		["OnEnter"] = function (rowFrame, cellFrame, data, cols, row, realrow, column, table, ...)
+			return true;
+		end, 
+		["OnLeave"] = function(rowFrame, cellFrame, data, cols, row, realrow, column, table, ...)
+			return true;
+		end,
+    })
+
+	table:EnableSelection(true)
+	table:SetData(guildWeeklyData, true)
+
+    window.lock = self.db.profile.lock_contrib_window
+
+    window:SetMovable()
+    window:RegisterForDrag("LeftButton")
+    window:SetScript("OnDragStart",
+        function(self,button)
+			if not self.lock then
+            	self:StartMoving()
+			end
+        end)
+    window:SetScript("OnDragStop",
+        function(self)
+            self:StopMovingOrSizing()
+			if Alts.db.profile.remember_contrib_pos then
+    			local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    			local x, y = self:GetCenter()
+    			x, y = x * scale, y * scale
+    			x = x - GetScreenWidth()/2
+    			y = y - GetScreenHeight()/2
+    			x = x / self:GetScale()
+    			y = y / self:GetScale()
+    			Alts.db.profile.contrib_window_x, 
+    			    Alts.db.profile.contrib_window_y = x, y
+    			self:SetUserPlaced(false);
+            end
+        end)
+    window:EnableMouse(true)
+
+	window:Hide()
+	
+	return window
 end
 
 function Alts:CreateAltsFrame()
@@ -1555,6 +2198,141 @@ function Alts:AltsHandler(input)
 
 	altsFrame:Show()
 	altsFrame:Raise()
+end
+
+function Alts:GuildContribHandler(input)
+--    self:GuildContrib()
+
+--	contribFrame.table:SortData()
+
+    -- Hide the options frame if it is open.
+	local optionsFrame = InterfaceOptionsFrame
+    optionsFrame:Hide()
+
+--    contribFrame:Show()
+--    contribFrame:Raise()
+
+    self:ShowContribFrame()
+end
+
+function Alts:GuildLogHandler(input)
+    self:ShowGuildLogFrame()
+end
+
+local function escapeField(value, escapeChar)
+    local strFmt = "%s%s%s"
+    local doubleEscape = escapeChar..escapeChar
+    if escapeChar and escapeChar ~= "" then
+        local escapedStr = value:gsub(escapeChar, doubleEscape)
+        return strFmt:format(escapeChar, escapedStr, escapeChar)
+    else
+        return value
+    end
+end
+
+local guildExportBuffer = {}
+function Alts:GenerateGuildExport()
+    local guildName = GetGuildInfo("player")
+    local source = LibAlts.GUILD_PREFIX..guildName
+    local guildExportText = ""
+
+    local delimiter = ","
+    local fields = {}
+    local quote = ""
+    if self.db.profile.exportEscape == true then
+        quote = "\""
+    end
+
+    local numMembers = GetNumGuildMembers(true)
+    local exportChar
+
+    if not guildName or numMembers == 0 then return end
+
+    for i = 1, numMembers do
+        local name, rank, rankIndex, level, class, zone, publicnote,  
+            officernote, online, status, classFileName, achPts, 
+            achRank, isMobile = GetGuildRosterInfo(i)
+        local weeklyXP, totalXP, weeklyRank, totalRank = GetGuildRosterContribution(i)
+
+        exportChar = true
+
+        if self.db.profile.exportOnlyMains == true then
+            -- If this character is an alt for the guild, then skip it.
+            if LibAlts:IsAltForSource(name, source) == true then
+                exportChar = false
+            end
+        end
+
+        if exportChar == true then
+            wipe(fields)
+            if self.db.profile.exportUseName == true then
+                tinsert(fields, name)
+            end
+            if self.db.profile.exportUseLevel == true then
+                tinsert(fields, level)
+            end
+            if self.db.profile.exportUseRank then 
+                tinsert(fields, escapeField(rank, quote))
+            end
+            if self.db.profile.exportUseClass == true then
+                tinsert(fields, class)
+            end
+            if self.db.profile.exportUsePublicNote == true then
+                tinsert(fields, escapeField(publicnote, quote))
+            end
+            if self.db.profile.exportUseOfficerNote == true then
+                tinsert(fields, escapeField(officernote, quote))
+            end
+
+            if self.db.profile.exportUseLastOnline == true then
+                local years, months, days, hours = GetGuildRosterLastOnline(i)
+                local lastOnline = 0
+                if online then
+                    lastOnline = time()
+                elseif years and months and days and hours then
+                    local diff = (((years*365)+(months*30)+days)*24+hours)*60*60
+                    lastOnline = time() - diff
+                end
+                tinsert(fields, date("%Y/%m/%d", lastOnline))
+            end
+
+            if self.db.profile.exportUseAchvPoints == true then
+                tinsert(fields, achPts)
+            end
+            if self.db.profile.exportUseWeeklyXP == true then
+                tinsert(fields, weeklyXP)
+            end
+            if self.db.profile.exportUseTotalXP == true then
+                tinsert(fields, totalXP)
+            end
+
+            if self.db.profile.exportUseAlts == true then
+                local altsStr = ""
+                if self.db.profile.exportOnlyGuildAlts == true then
+                    altsStr = strjoin("|", LibAlts:GetAltsForSource(name, source)) or ""
+                else
+                    altsStr = strjoin("|", LibAlts:GetAlts(name)) or ""
+                end
+                tinsert(fields, altsStr)
+            end
+
+            local line = tconcat(fields, delimiter)
+            tinsert(guildExportBuffer, line)
+        end
+    end
+
+    -- Add a blank line so a final new line is added
+    tinsert(guildExportBuffer, "")
+
+    guildExportText = tconcat(guildExportBuffer, "\n")
+
+    wipe(guildExportBuffer)
+
+    return guildExportText
+end
+
+function Alts:GuildExportHandler(input)
+    self:ShowGuildExportFrame()
 end
 
 function Alts:CreateEditAltsFrame()
@@ -1999,11 +2777,19 @@ function Alts:OnEnable()
 	self:RegisterEvent("GUILD_ROSTER_UPDATE")
     GuildRoster()
 
+	-- Register event to update friends data.
+	self:RegisterEvent("FRIENDLIST_UPDATE")
+	-- Call ShowFriends to get the friend and ignore data updated.
+    ShowFriends()
+
     -- Populate the MainsTable
     self:UpdateMainsTable()
 
 	-- Create the Alts frame for later use
     altsFrame = self:CreateAltsFrame()
+
+	-- Create the Contributions frame for later use
+    contribFrame = self:CreateContribFrame()
 	
 	-- Create the Set Main frame to use later
 	setMainFrame = self:CreateSetMainFrame()
@@ -2208,6 +2994,12 @@ end
 function Alts:GUILD_ROSTER_UPDATE(event, message)
     self:UnregisterEvent("GUILD_ROSTER_UPDATE")
     self:UpdateGuild()
+end
+
+function Alts:FRIENDLIST_UPDATE(event, message)
+    self:UnregisterEvent("FRIENDLIST_UPDATE")
+    self:CheckAndUpdateFriends()
+    self:CheckAndUpdateIgnores()
 end
 
 function Alts:BN_FRIEND_ACCOUNT_ONLINE(event, message)
