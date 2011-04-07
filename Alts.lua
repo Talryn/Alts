@@ -102,10 +102,18 @@ local MainsBySource = {}
 local AllMains = {}
 local MainsTable = {}
 local EditAltsTable = {}
-local guildWeekly = {}
-local guildTotal = {}
-local guildWeeklyData = {}
-local guildTotalData = {}
+local GuildXP = {
+    weekly = {
+        data = {},
+        sorted = {},
+        totalXP = 0
+    },
+    total = {
+        data = {},
+        sorted = {},
+        totalXP = 0
+    }
+}
 
 local function ReverseTable(table)
 	local reverse = {}
@@ -312,8 +320,10 @@ function Alts:CheckAndUpdateIgnores()
 end
 
 function Alts:GuildContrib()
-    wipe(guildWeekly)
-    wipe(guildTotal)
+    wipe(GuildXP.weekly.data)
+    wipe(GuildXP.total.data)
+    GuildXP.weekly.totalXP = 0
+    GuildXP.total.totalXP = 0
     
     local guildName = GetGuildInfo("player")
     local numMembers = GetNumGuildMembers(true)
@@ -340,21 +350,23 @@ function Alts:GuildContrib()
 
         local main = (LibAlts:GetMainForSource(name, source) or name)
 
-        guildWeekly[main] = (guildWeekly[main] or 0) + weeklyXP
-        guildTotal[main] = (guildTotal[main] or 0) + totalXP
+        GuildXP.weekly.data[main] = (GuildXP.weekly.data[main] or 0) + weeklyXP
+        GuildXP.weekly.totalXP = GuildXP.weekly.totalXP + weeklyXP
+        GuildXP.total.data[main] = (GuildXP.total.data[main] or 0) + totalXP
+        GuildXP.total.totalXP = GuildXP.total.totalXP + totalXP
     end
 
-    wipe(guildWeeklyData)
-    for name, xp in pairs(guildWeekly) do
-        tinsert(guildWeeklyData, {name, xp})
-        tsort(guildWeeklyData, function(a,b) return a[2] > b[2] end)
+    wipe(GuildXP.weekly.sorted)
+    for name, xp in pairs(GuildXP.weekly.data) do
+        tinsert(GuildXP.weekly.sorted, {name, xp})
     end
+    tsort(GuildXP.weekly.sorted, function(a,b) return a[2] > b[2] end)
 
-    wipe(guildTotalData)
-    for name, xp in pairs(guildTotal) do
-        tinsert(guildTotalData, {name, xp})
-        tsort(guildTotalData, function(a,b) return a[2] > b[2] end)
+    wipe(GuildXP.total.sorted)
+    for name, xp in pairs(GuildXP.total.data) do
+        tinsert(GuildXP.total.sorted, {name, xp})
     end
+    tsort(GuildXP.total.sorted, function(a,b) return a[2] > b[2] end)
 end
 
 function Alts:UpdateGuild()
@@ -788,222 +800,248 @@ function Alts:GetOptions()
             name = ADDON_NAME,
             type = 'group',
             args = {
-        		displayheader = {
-        			order = 0,
-        			type = "header",
-        			name = "General Options",
-        		},
-        	    minimap = {
-                    name = L["Minimap Button"],
-                    desc = L["Toggle the minimap button"],
-                    type = "toggle",
-                    set = function(info,val)
-                        	-- Reverse the value since the stored value is to hide it
-                            self.db.profile.minimap.hide = not val
-                        	if self.db.profile.minimap.hide then
-                        		icon:Hide("AltsLDB")
-                        	else
-                        		icon:Show("AltsLDB")
-                        	end
-                          end,
-                    get = function(info)
-                	        -- Reverse the value since the stored value is to hide it
-                            return not self.db.profile.minimap.hide
-                          end,
-        			order = 10
+                core = {
+				    order = 1,
+					name = L["General Options"],
+					type = "group",
+					args = {
+                		displayheader = {
+                			order = 0,
+                			type = "header",
+                			name = L["General Options"],
+                		},
+                	    minimap = {
+                            name = L["Minimap Button"],
+                            desc = L["Toggle the minimap button"],
+                            type = "toggle",
+                            set = function(info,val)
+                                	-- Reverse the value since the stored value is to hide it
+                                    self.db.profile.minimap.hide = not val
+                                	if self.db.profile.minimap.hide then
+                                		icon:Hide("AltsLDB")
+                                	else
+                                		icon:Show("AltsLDB")
+                                	end
+                                  end,
+                            get = function(info)
+                        	        -- Reverse the value since the stored value is to hide it
+                                    return not self.db.profile.minimap.hide
+                                  end,
+                			order = 10
+                        },
+                	    verbose = {
+                            name = L["Verbose"],
+                            desc = L["Toggles the display of informational messages"],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.verbose = val end,
+                            get = function(info) return self.db.profile.verbose end,
+                			order = 15
+                        },
+                		headerMainWindow = {
+                			order = 200,
+                			type = "header",
+                			name = L["Main Window"],
+                		},
+                        lock_main_window = {
+                            name = L["Lock"],
+                            desc = L["Lock_OptionDesc"],
+                            type = "toggle",
+                            set = function(info,val)
+                                self.db.profile.lock_main_window = val
+                                altsFrame.lock = val
+                            end,
+                            get = function(info) return self.db.profile.lock_main_window end,
+                			order = 210
+                        },
+                        remember_main_pos = {
+                            name = L["Remember Position"],
+                            desc = L["RememberPosition_OptionDesc"],
+                            type = "toggle",
+                            set = function(info,val) self.db.profile.remember_main_pos = val end,
+                            get = function(info) return self.db.profile.remember_main_pos end,
+                			order = 220
+                        },
+                		displayheaderTooltip = {
+                			order = 300,
+                			type = "header",
+                			name = L["Tooltip Options"],
+                		},
+                        wrapTooltip = {
+                            name = L["Wrap Tooltips"],
+                            desc = L["Wrap notes in tooltips"],
+                            type = "toggle",
+                            set = function(info,val) self.db.profile.wrapTooltip = val end,
+                            get = function(info) return self.db.profile.wrapTooltip end,
+                			order = 310
+                        },
+                        wrapTooltipLength = {
+                            name = L["Tooltip Wrap Length"],
+                            desc = L["Maximum line length for a tooltip"],
+                            type = "range",
+                			min = 20,
+                			max = 80,
+                			step = 1,
+                            set = function(info,val) self.db.profile.wrapTooltipLength = val end,
+                            get = function(info) return self.db.profile.wrapTooltipLength end,
+                			order = 320
+                        },
+                    },
                 },
-        	    verbose = {
-                    name = L["Verbose"],
-                    desc = L["Toggles the display of informational messages"],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.verbose = val end,
-                    get = function(info) return self.db.profile.verbose end,
-        			order = 15
+                notes = {
+				    order = 2,
+					name = L["Notes"],
+					type = "group",
+					args = {
+                		displayheaderDisplay = {
+                			order = 100,
+                			type = "header",
+                			name = L["Display Options"],
+                		},
+                	    showMainsInChat = {
+                            name = L["Main Names in Chat"],
+                            desc = L["MainNamesInChat_OptionDesc"],
+                            type = "toggle",
+                            set = function(info, val)
+                                    self.db.profile.showMainsInChat = val
+                                    if val then
+                                        self:HookChatFrames()
+                                    else
+                                        self:UnhookChatFrames()
+                                    end
+                                end,
+                            get = function(info) return self.db.profile.showMainsInChat end,
+                			order = 105
+                        },
+                	    mainInTooltip = {
+                            name = L["Main Name In Tooltips"],
+                            desc = L["Toggles the display of the main name in tooltips"],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.showMainInTooltip = val end,
+                            get = function(info) return self.db.profile.showMainInTooltip end,
+                			order = 110
+                        },
+                	    altsInTooltip = {
+                            name = L["Alt Names In Tooltips"],
+                            desc = L["Toggles the display of alt names in tooltips"],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.showAltsInTooltip = val end,
+                            get = function(info) return self.db.profile.showAltsInTooltip end,
+                			order = 120
+                        },
+                	    infoOnLogon = {
+                            name = L["Main/Alt Info on Friend Logon"],
+                            desc = L["Toggles the display of main/alt information when a friend or guild member logs on"],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.showInfoOnLogon = val end,
+                            get = function(info) return self.db.profile.showInfoOnLogon end,
+                			order = 130
+                        },
+                	    infoOnWho = {
+                            name = L["Main/Alt Info with /who"],
+                            desc = L["Toggles the display of main/alt information with /who results"],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.showInfoOnWho = val end,
+                            get = function(info) return self.db.profile.showInfoOnWho end,
+                			order = 140
+                        },
+                	    singleLineChatDisplay = {
+                            name = L["Single Line for Chat"],
+                            desc = L["Toggles whether the main and alt information is on one line or separate lines in the chat window."],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.singleLineChatDisplay = val end,
+                            get = function(info) return self.db.profile.singleLineChatDisplay end,
+                			order = 140
+                        },
+                	    singleLineTooltipDisplay = {
+                            name = L["Single Line for Tooltip"],
+                            desc = L["Toggles whether the main and alt information is on one line or separate lines in tooltips."],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.singleLineTooltipDisplay = val end,
+                            get = function(info) return self.db.profile.singleLineTooltipDisplay end,
+                			order = 150
+                        },
+                    },
                 },
-        		displayheaderGuild = {
-        			order = 20,
-        			type = "header",
-        			name = L["Guild Import Options"],
-        		},
-        	    autoImportGuild = {
-                    name = L["Auto Import Guild"],
-                    desc = L["Toggles if main/alt data should be automatically imported from guild notes."],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.autoGuildImport = val end,
-                    get = function(info) return self.db.profile.autoGuildImport end,
-        			order = 30
+                guild = {
+				    order = 3,
+					name = L["Guild"],
+					type = "group",
+					args = {
+                		displayheaderGuild = {
+                			order = 20,
+                			type = "header",
+                			name = L["Guild Import Options"],
+                		},
+                	    autoImportGuild = {
+                            name = L["Auto Import Guild"],
+                            desc = L["Toggles if main/alt data should be automatically imported from guild notes."],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.autoGuildImport = val end,
+                            get = function(info) return self.db.profile.autoGuildImport end,
+                			order = 30
+                        },
+                	    reportMissingMains = {
+                            name = L["Report Missing Mains"],
+                            desc = L["Toggles if missing mains should be reported when importing."],
+                            type = "toggle",
+                            set = function(info, val) self.db.profile.reportMissingMains = val end,
+                            get = function(info) return self.db.profile.reportMissingMains end,
+                			order = 40
+                        },
+                		headerLogs = {
+                			order = 100,
+                			type = "header",
+                			name = "Log Options",
+                		},
+                        guildLogButton = {
+                            name = L["Guild Log"],
+                            desc = L["GuildLog_OptionDesc"],
+                            type = "execute",
+                            width = "normal",
+                            func = function()
+                            	local optionsFrame = InterfaceOptionsFrame
+                                optionsFrame:Hide()
+                                self:GuildLogHandler("")
+                            end,
+                			order = 110
+                        },
+                        guildExportButton = {
+                            name = L["Guild Export"],
+                            desc = L["GuildExport_OptionDesc"],
+                            type = "execute",
+                            width = "normal",
+                            func = function()
+                            	local optionsFrame = InterfaceOptionsFrame
+                                optionsFrame:Hide()
+                                self:GuildExportHandler("")
+                            end,
+                			order = 120
+                        },
+                        guildWeeklyButton = {
+                            name = L["Guild Contribution"],
+                            desc = L["GuildContribution_OptionDesc"],
+                            type = "execute",
+                            width = "normal",
+                            func = function()
+                            	local optionsFrame = InterfaceOptionsFrame
+                                optionsFrame:Hide()
+                                self:GuildContribHandler("")
+                            end,
+                			order = 130
+                        },
+                    },
                 },
-        	    reportMissingMains = {
-                    name = L["Report Missing Mains"],
-                    desc = L["Toggles if missing mains should be reported when importing."],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.reportMissingMains = val end,
-                    get = function(info) return self.db.profile.reportMissingMains end,
-        			order = 40
-                },
-        		displayheaderDisplay = {
-        			order = 100,
-        			type = "header",
-        			name = L["Display Options"],
-        		},
-        	    showMainsInChat = {
-                    name = L["Main Names in Chat"],
-                    desc = L["MainNamesInChat_OptionDesc"],
-                    type = "toggle",
-                    set = function(info, val)
-                            self.db.profile.showMainsInChat = val
-                            if val then
-                                self:HookChatFrames()
-                            else
-                                self:UnhookChatFrames()
-                            end
-                        end,
-                    get = function(info) return self.db.profile.showMainsInChat end,
-        			order = 105
-                },
-        	    mainInTooltip = {
-                    name = L["Main Name In Tooltips"],
-                    desc = L["Toggles the display of the main name in tooltips"],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.showMainInTooltip = val end,
-                    get = function(info) return self.db.profile.showMainInTooltip end,
-        			order = 110
-                },
-        	    altsInTooltip = {
-                    name = L["Alt Names In Tooltips"],
-                    desc = L["Toggles the display of alt names in tooltips"],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.showAltsInTooltip = val end,
-                    get = function(info) return self.db.profile.showAltsInTooltip end,
-        			order = 120
-                },
-        	    infoOnLogon = {
-                    name = L["Main/Alt Info on Friend Logon"],
-                    desc = L["Toggles the display of main/alt information when a friend or guild member logs on"],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.showInfoOnLogon = val end,
-                    get = function(info) return self.db.profile.showInfoOnLogon end,
-        			order = 130
-                },
-        	    infoOnWho = {
-                    name = L["Main/Alt Info with /who"],
-                    desc = L["Toggles the display of main/alt information with /who results"],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.showInfoOnWho = val end,
-                    get = function(info) return self.db.profile.showInfoOnWho end,
-        			order = 140
-                },
-        	    singleLineChatDisplay = {
-                    name = L["Single Line for Chat"],
-                    desc = L["Toggles whether the main and alt information is on one line or separate lines in the chat window."],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.singleLineChatDisplay = val end,
-                    get = function(info) return self.db.profile.singleLineChatDisplay end,
-        			order = 140
-                },
-        	    singleLineTooltipDisplay = {
-                    name = L["Single Line for Tooltip"],
-                    desc = L["Toggles whether the main and alt information is on one line or separate lines in tooltips."],
-                    type = "toggle",
-                    set = function(info, val) self.db.profile.singleLineTooltipDisplay = val end,
-                    get = function(info) return self.db.profile.singleLineTooltipDisplay end,
-        			order = 150
-                },
-        		headerMainWindow = {
-        			order = 200,
-        			type = "header",
-        			name = L["Main Window"],
-        		},
-                lock_main_window = {
-                    name = L["Lock"],
-                    desc = L["Lock_OptionDesc"],
-                    type = "toggle",
-                    set = function(info,val)
-                        self.db.profile.lock_main_window = val
-                        altsFrame.lock = val
-                    end,
-                    get = function(info) return self.db.profile.lock_main_window end,
-        			order = 210
-                },
-                remember_main_pos = {
-                    name = L["Remember Position"],
-                    desc = L["RememberPosition_OptionDesc"],
-                    type = "toggle",
-                    set = function(info,val) self.db.profile.remember_main_pos = val end,
-                    get = function(info) return self.db.profile.remember_main_pos end,
-        			order = 220
-                },
-        		displayheaderTooltip = {
-        			order = 300,
-        			type = "header",
-        			name = L["Tooltip Options"],
-        		},
-                wrapTooltip = {
-                    name = L["Wrap Tooltips"],
-                    desc = L["Wrap notes in tooltips"],
-                    type = "toggle",
-                    set = function(info,val) self.db.profile.wrapTooltip = val end,
-                    get = function(info) return self.db.profile.wrapTooltip end,
-        			order = 310
-                },
-                wrapTooltipLength = {
-                    name = L["Tooltip Wrap Length"],
-                    desc = L["Maximum line length for a tooltip"],
-                    type = "range",
-        			min = 20,
-        			max = 80,
-        			step = 1,
-                    set = function(info,val) self.db.profile.wrapTooltipLength = val end,
-                    get = function(info) return self.db.profile.wrapTooltipLength end,
-        			order = 320
-                },
-        		headerLogs = {
-        			order = 400,
-        			type = "header",
-        			name = "Log Options",
-        		},
-                guildLogButton = {
-                    name = L["Guild Log"],
-                    desc = L["GuildLog_OptionDesc"],
-                    type = "execute",
-                    width = "normal",
-                    func = function()
-                    	local optionsFrame = InterfaceOptionsFrame
-                        optionsFrame:Hide()
-                        self:GuildLogHandler("")
-                    end,
-        			order = 410
-                },
-                guildExportButton = {
-                    name = L["Guild Export"],
-                    desc = L["GuildExport_OptionDesc"],
-                    type = "execute",
-                    width = "normal",
-                    func = function()
-                    	local optionsFrame = InterfaceOptionsFrame
-                        optionsFrame:Hide()
-                        self:GuildExportHandler("")
-                    end,
-        			order = 420
-                },
-                guildWeeklyButton = {
-                    name = L["Guild Contribution"],
-                    desc = L["GuildContribution_OptionDesc"],
-                    type = "execute",
-                    width = "normal",
-                    func = function()
-                    	local optionsFrame = InterfaceOptionsFrame
-                        optionsFrame:Hide()
-                        self:GuildContribHandler("")
-                    end,
-        			order = 430
-                },
-
             }
         }
+	    options.args.profile = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
     end
 
     return options
+end
+
+function Alts:ShowOptions()
+	InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Notes)
+	InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
 end
 
 function Alts:OnInitialize()
@@ -1012,9 +1050,19 @@ function Alts:OnInitialize()
     Mains = ReverseTable(self.db.realm.alts)
 
     -- Register the options table
-    LibStub("AceConfig-3.0"):RegisterOptionsTable("Alts", self:GetOptions())
-	self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(
-	    "Alts", ADDON_NAME)
+    local displayName = GetAddOnMetadata(ADDON_NAME, "Title")
+	local options = self:GetOptions()
+    LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, options)
+    self.optionsFrame = {}
+    local ACD = LibStub("AceConfigDialog-3.0")
+	self.optionsFrame.Main = ACD:AddToBlizOptions(
+	    displayName, displayName, nil, "core")
+	self.optionsFrame.Notes = ACD:AddToBlizOptions(
+	    displayName, L["Notes"], displayName, "notes")
+	self.optionsFrame.Guild = ACD:AddToBlizOptions(
+	    displayName, L["Guild"], displayName, "guild")
+	ACD:AddToBlizOptions(
+	    displayName, options.args.profile.name, displayName, "profile")
 
     -- Check that LibAlts is available and has the correct methods
     if LibAlts and LibAlts.RegisterCallback and LibAlts.SetAlt and 
@@ -1054,7 +1102,7 @@ function Alts:OnInitialize()
     				optionsFrame:Hide()
     			else
     			    self:HideAltsWindow()
-    				InterfaceOptionsFrame_OpenToCategory(self.optionsFrame)
+    				self:ShowOptions()
     			end
     		elseif button == "LeftButton" then
     			if self:IsVisible() then
@@ -1607,9 +1655,11 @@ function Alts:ShowContribFrame()
         
         local table
         if value == "Weekly" then
-            table = guildWeeklyData
+            table = GuildXP.weekly.sorted
+            totalXP = GuildXP.weekly.totalXP
         else
-            table = guildTotalData
+            table = GuildXP.total.sorted
+            totalXP = GuildXP.total.totalXP
         end
 
         for i, data in ipairs(table) do
@@ -1622,7 +1672,7 @@ function Alts:ShowContribFrame()
             scroll:AddChild(nameField)
             local xpField = AGU:Create("Label")
             xpField:SetText(xp)
-            xpField:SetRelativeWidth(0.5)
+            xpField:SetRelativeWidth(0.3)
             xpField.label:SetJustifyH("RIGHT")
             xpField:SetCallback("OnRelease",
                 function(widget)
@@ -1630,9 +1680,26 @@ function Alts:ShowContribFrame()
                 end
             )
             scroll:AddChild(xpField)
+            local percFmt = "%.1f%%"
+            local percField = AGU:Create("Label")
+            local percent = 0
+            if totalXP > 0 then
+                percent = xp/totalXP*100
+            end
+            percField:SetText(percFmt:format(percent))
+            percField:SetRelativeWidth(0.2)
+            percField.label:SetJustifyH("RIGHT")
+            percField:SetCallback("OnRelease",
+                function(widget)
+                    widget.label:SetJustifyH("LEFT")
+                end
+            )
+            scroll:AddChild(percField)
         end
         scroll:ResumeLayout()
         scroll:DoLayout()
+        local strFmt = "%s: %d"
+        frame:SetStatusText(strFmt:format(L["Total XP"], totalXP))
     end
     
     ContribsFrame.update("Total")
@@ -1935,7 +2002,7 @@ function Alts:CreateContribFrame()
     })
 
 	table:EnableSelection(true)
-	table:SetData(guildWeeklyData, true)
+	table:SetData(GuildXP.weekly.sorted, true)
 
     window.lock = self.db.profile.lock_contrib_window
 
