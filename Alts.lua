@@ -410,6 +410,7 @@ function Alts:UpdateGuild()
 
     -- Save the information if we're tracking the guild.
     if self.db.profile.saveGuild then
+        local nameWithMainFmt = "%s (Main: %s)"
         -- Before updating the saved guild info, check for the differences.
         self.db.realm.guilds[guildName] = self.db.realm.guilds[guildName] or {}
         self.db.realm.guildLog[guildName] = self.db.realm.guildLog[guildName] or {}
@@ -431,9 +432,14 @@ function Alts:UpdateGuild()
             local leaveLogFmt = "%s  %s "..L["GuildLog_LeftGuild"]
             for name, lastOnline in pairs(self.db.realm.guilds[guildName]) do
                 if guildMembers[name] == nil then
-                    self:Print(leaveFmt:format(name))
+                    local nameWithMain = name
+                    local main = LibAlts:GetMain(name)
+                    if main and #main > 0 then
+                        nameWithMain = nameWithMainFmt:format(name, main)
+                    end
+                    self:Print(leaveFmt:format(nameWithMain))
                     tinsert(self.db.realm.guildLog[guildName],
-                        leaveLogFmt:format(date("%Y/%m/%d %H:%M"), name))
+                        leaveLogFmt:format(date("%Y/%m/%d %H:%M"), nameWithMain))
                 end 
             end
         end
@@ -1363,6 +1369,12 @@ function Alts:ShowGuildLogFrame()
     )
     frame:AddChild(limit)
 
+    local spacer = AGU:Create("Label")
+    spacer:SetFullWidth(true)
+    spacer:SetHeight(50)
+    spacer:SetText(" ")
+    frame:AddChild(spacer)
+
     local simple = AGU:Create("SimpleGroup")
     simple:SetLayout("Fill")
     simple:SetFullHeight(true)
@@ -1636,6 +1648,47 @@ function Alts:ShowContribFrame()
         end
 	)
 	frame:AddChild(periodDropdown)
+
+    local spacer = AGU:Create("Label")
+    spacer:SetFullWidth(true)
+    spacer:SetHeight(50)
+    spacer:SetText(" ")
+    frame:AddChild(spacer)
+
+    local header = AGU:Create("SimpleGroup")
+    header:SetLayout("Flow")
+    header:SetFullWidth(true)
+    frame:AddChild(header)
+
+    local nameHeader = AGU:Create("Label")
+    nameHeader:SetText(L["Main Name"])
+    nameHeader:SetRelativeWidth(0.5)
+    header:AddChild(nameHeader)
+    local xpHeader = AGU:Create("Label")
+    xpHeader:SetText(L["XP"])
+    xpHeader:SetRelativeWidth(0.3)
+    xpHeader.label:SetJustifyH("RIGHT")
+    xpHeader:SetCallback("OnRelease",
+        function(widget)
+            widget.label:SetJustifyH("LEFT")
+        end
+    )
+    header:AddChild(xpHeader)
+    local percHeader = AGU:Create("Label")
+    percHeader:SetText(L["Percent"])
+    percHeader:SetRelativeWidth(0.2)
+    percHeader.label:SetJustifyH("RIGHT")
+    percHeader:SetCallback("OnRelease",
+        function(widget)
+            widget.label:SetJustifyH("LEFT")
+        end
+    )
+    header:AddChild(percHeader)
+
+    local line = AGU:Create("Heading")
+    line:SetFullWidth(true)
+    line:SetText("")
+    frame:AddChild(line)
 
     local simple = AGU:Create("SimpleGroup")
     simple:SetLayout("Fill")
