@@ -72,6 +72,9 @@ local defaults = {
 		exportEscape = true,
 		exportOnlyMains = true,
 		exportOnlyGuildAlts = true,
+		reportRemovedFriends = true,
+		reportRemovedIgnores = true,
+		reportGuildChanges = true
 	},
 	realm = {
 	    alts = {},
@@ -287,7 +290,7 @@ function Alts:CheckAndUpdateFriends()
     
     -- Check for removed friends
     for name, note in pairs(self.db.char.friends) do
-        if friends[name] == nil then
+        if friends[name] == nil and self.db.profile.reportRemovedFriends == true then
             self:Print(strFmt:format(name))
         end
     end
@@ -311,7 +314,7 @@ function Alts:CheckAndUpdateIgnores()
     
     -- Check for removed ignores
     for name, value in pairs(self.db.char.ignores) do
-        if ignores[name] == nil then
+        if ignores[name] == nil and self.db.profile.reportRemovedIgnores == true then
             self:Print(strFmt:format(name))
         end
     end
@@ -410,7 +413,7 @@ function Alts:UpdateGuild()
 
     -- Save the information if we're tracking the guild.
     if self.db.profile.saveGuild then
-        local nameWithMainFmt = "%s (Main: %s)"
+        local nameWithMainFmt = "%s (" .. L["Main: "] .. "%s)"
         -- Before updating the saved guild info, check for the differences.
         self.db.realm.guilds[guildName] = self.db.realm.guilds[guildName] or {}
         self.db.realm.guildLog[guildName] = self.db.realm.guildLog[guildName] or {}
@@ -422,7 +425,9 @@ function Alts:UpdateGuild()
             local joinLogFmt = "%s  %s "..L["GuildLog_JoinedGuild"]
             for name, lastOnline in pairs(guildMembers) do
                 if self.db.realm.guilds[guildName][name] == nil then
-                    self:Print(joinFmt:format(name))
+                    if self.db.profile.reportGuildChanges == true then
+                        self:Print(joinFmt:format(name))
+                    end
                     tinsert(self.db.realm.guildLog[guildName],
                         joinLogFmt:format(date("%Y/%m/%d %H:%M"), name))
                 end 
@@ -437,7 +442,9 @@ function Alts:UpdateGuild()
                     if main and #main > 0 then
                         nameWithMain = nameWithMainFmt:format(name, main)
                     end
-                    self:Print(leaveFmt:format(nameWithMain))
+                    if self.db.profile.reportGuildChanges == true then
+                        self:Print(leaveFmt:format(nameWithMain))
+                    end
                     tinsert(self.db.realm.guildLog[guildName],
                         leaveLogFmt:format(date("%Y/%m/%d %H:%M"), nameWithMain))
                 end 
@@ -997,8 +1004,17 @@ function Alts:GetOptions()
                 		headerLogs = {
                 			order = 100,
                 			type = "header",
-                			name = "Log Options",
+                			name = L["Log Options"],
                 		},
+                	    reportGuildChanges = {
+                            name = L["Report Guild Changes"],
+                            desc = L["ReportGuildChanges_OptionDesc"],
+                            type = "toggle",
+                            width = "double",
+                            set = function(info, val) self.db.profile.reportGuildChanges = val end,
+                            get = function(info) return self.db.profile.reportGuildChanges end,
+                			order = 110
+                        },
                         guildLogButton = {
                             name = L["Guild Log"],
                             desc = L["GuildLog_OptionDesc"],
@@ -1009,8 +1025,13 @@ function Alts:GetOptions()
                                 optionsFrame:Hide()
                                 self:GuildLogHandler("")
                             end,
-                			order = 110
+                			order = 120
                         },
+                		headerExport = {
+                			order = 200,
+                			type = "header",
+                			name = L["Export"],
+                		},
                         guildExportButton = {
                             name = L["Guild Export"],
                             desc = L["GuildExport_OptionDesc"],
@@ -1021,8 +1042,13 @@ function Alts:GetOptions()
                                 optionsFrame:Hide()
                                 self:GuildExportHandler("")
                             end,
-                			order = 120
+                			order = 210
                         },
+                		headerContribs = {
+                			order = 300,
+                			type = "header",
+                			name = L["Contributions"],
+                		},
                         guildWeeklyButton = {
                             name = L["Guild Contribution"],
                             desc = L["GuildContribution_OptionDesc"],
@@ -1033,10 +1059,52 @@ function Alts:GetOptions()
                                 optionsFrame:Hide()
                                 self:GuildContribHandler("")
                             end,
-                			order = 130
+                			order = 310
                         },
                     },
                 },
+                friends = {
+				    order = 4,
+					name = L["Friends"],
+					type = "group",
+					args = {
+                		displayOptions = {
+                			order = 100,
+                			type = "header",
+                			name = L["General Options"],
+                		},
+                	    reportRemovedFriends = {
+                            name = L["Report Removed Friends"],
+                            desc = L["ReportRemovedFriends_OptionDesc"],
+                            type = "toggle",
+                            width = "double",
+                            set = function(info, val) self.db.profile.reportRemovedFriends = val end,
+                            get = function(info) return self.db.profile.reportRemovedFriends end,
+                			order = 110
+                        },
+            		},
+        		},
+                ignores = {
+				    order = 5,
+					name = L["Ignores"],
+					type = "group",
+					args = {
+                		displayOptions = {
+                			order = 100,
+                			type = "header",
+                			name = L["General Options"],
+                		},
+                	    reportRemovedFriends = {
+                            name = L["Report Removed Ignores"],
+                            desc = L["ReportRemovedIgnores_OptionDesc"],
+                            type = "toggle",
+                            width = "double",
+                            set = function(info, val) self.db.profile.reportRemovedIgnores = val end,
+                            get = function(info) return self.db.profile.reportRemovedIgnores end,
+                			order = 110
+                        },
+            		},
+        		},
             }
         }
 	    options.args.profile = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
@@ -1067,6 +1135,10 @@ function Alts:OnInitialize()
 	    displayName, L["Notes"], displayName, "notes")
 	self.optionsFrame.Guild = ACD:AddToBlizOptions(
 	    displayName, L["Guild"], displayName, "guild")
+	self.optionsFrame.Guild = ACD:AddToBlizOptions(
+	    displayName, L["Friends"], displayName, "friends")
+	self.optionsFrame.Guild = ACD:AddToBlizOptions(
+	    displayName, L["Ignores"], displayName, "ignores")
 	ACD:AddToBlizOptions(
 	    displayName, options.args.profile.name, displayName, "profile")
 
@@ -1638,8 +1710,8 @@ function Alts:ShowContribFrame()
 	local periodDropdown = AGU:Create("Dropdown")
 	periodDropdown:SetLabel("Period")
 	periodDropdown.list = {}
-	periodDropdown:AddItem("Weekly", "Weekly")
-	periodDropdown:AddItem("Total", "Total")
+	periodDropdown:AddItem("Weekly", L["Weekly"])
+	periodDropdown:AddItem("Total", L["Total"])
 	periodDropdown:SetValue("Total")
 	periodDropdown:SetWidth(150)
 	periodDropdown:SetCallback("OnValueChanged",
