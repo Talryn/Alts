@@ -476,7 +476,7 @@ function Alts:UpdateGuild()
         local altMatch2 = "[Aa][Ll][Tt]:%s*(%a+)"
         local altMatch3 = "[Aa][Ll][Tt] [Oo][Ff] (%a+)"
         local altMatch4 = "[Aa][Kk][Aa]:%s*(%a+)"
-        local altMatch5 = "[(](%a+)[)]"
+        local altMatch5 = "^[(](%a+)[)]"
 
         local funcs = {
             -- Check if the note format is "<name>'s alt"
