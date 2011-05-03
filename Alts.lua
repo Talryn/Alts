@@ -1509,6 +1509,7 @@ function Alts:ShowGuildExportFrame()
     multiline:SetNumLines(10)
     multiline:SetMaxLetters(0)
     multiline:SetFullWidth(true)
+    multiline:DisableButton(true)
     frame:AddChild(multiline)
     frame.multiline = multiline
 
@@ -1690,12 +1691,45 @@ function Alts:ShowGuildExportFrame()
     frame:AddChild(exportButton)
 end
 
+function Alts:CreateGuildContribExport(period)
+    local table
+    local totalXP = 0
+    if peroid == "Weekly" then
+        table = GuildXP.weekly.sorted
+        totalXP = GuildXP.weekly.totalXP
+    else
+        table = GuildXP.total.sorted
+        totalXP = GuildXP.total.totalXP
+    end
+
+    local strFmt = "%s,%d"
+    local line
+    local buffer = {}
+    for i, data in ipairs(table) do
+        local name = data[1]
+        local xp = data[2]
+        line = strFmt:format(name,xp)
+        buffer[i] = line
+    end
+    tinsert(buffer, "")
+    
+    return tconcat(buffer, "\n")
+end
+
+function Alts:CreateGuildWeeklyContribExport()
+    return Alts:CreateGuildContribExport("Weekly")
+end
+
+function Alts:CreateGuildTotalContribExport()
+    return Alts:CreateGuildContribExport("Total")
+end
+
 local ContribsFrame = nil
 function Alts:ShowContribFrame()
     if ContribsFrame then return end
 
 	local frame = AGU:Create("Frame")
-	frame:SetTitle("Guild Contributions By Main")
+	frame:SetTitle(L["Guild Contributions By Main"])
 	frame:SetWidth(400)
 	frame:SetHeight(350)
     frame:SetLayout("Flow")
@@ -1706,6 +1740,7 @@ function Alts:ShowContribFrame()
 	end)
 
     ContribsFrame = frame
+    ContribsFrame.currentPeriod = "Total"
 
 	local periodDropdown = AGU:Create("Dropdown")
 	periodDropdown:SetLabel("Period")
@@ -1716,10 +1751,33 @@ function Alts:ShowContribFrame()
 	periodDropdown:SetWidth(150)
 	periodDropdown:SetCallback("OnValueChanged",
         function(widget, event, value)
+            ContribsFrame.currentPeriod = value
             ContribsFrame.update(value)
         end
 	)
 	frame:AddChild(periodDropdown)
+
+    local spacer = AGU:Create("Label")
+    spacer:SetText(" ")
+    spacer:SetWidth(50)
+    frame:AddChild(spacer)
+
+	local exportButton = AGU:Create("Button")
+	exportButton:SetText(L["Export"])
+	exportButton:SetWidth(100)
+	exportButton:SetPoint("RIGHT", -5, 0)
+	exportButton:SetCallback("OnClick",
+        function(widget, event, value)
+            ContribsFrame.frame:Hide()
+            if ContribsFrame and ContribsFrame.currentPeriod and 
+                ContribsFrame.currentPeriod == "Weekly" then
+                Alts:ShowExportFrame(Alts.CreateGuildWeeklyContribExport)
+            else
+                Alts:ShowExportFrame(Alts.CreateGuildTotalContribExport)
+            end
+        end
+	)
+    frame:AddChild(exportButton)
 
     local spacer = AGU:Create("Label")
     spacer:SetFullWidth(true)
@@ -1828,6 +1886,40 @@ function Alts:ShowContribFrame()
     end
     
     ContribsFrame.update("Total")
+end
+
+local ExportFrame = nil
+function Alts:ShowExportFrame(exportFunc)
+    if not exportFunc or type(exportFunc) ~= "function" then return end 
+
+    if ExportFrame then return end
+
+    local exportData = exportFunc()
+    if not exportData then return end
+
+	local frame = AGU:Create("Frame")
+	frame:SetTitle(L["Export"])
+	frame:SetWidth(450)
+	frame:SetHeight(350)
+    frame:SetLayout("Flow")
+	frame:SetCallback("OnClose", function(widget)
+		widget:ReleaseChildren()
+		widget:Release()
+		ExportFrame = nil
+	end)
+
+    ExportFrame = frame
+
+    local multiline = AGU:Create("MultiLineEditBox")
+    multiline:SetLabel(L["GuildExport_ExportLabel"])
+    multiline:SetNumLines(13)
+    multiline:SetMaxLetters(0)
+    multiline:SetFullWidth(true)
+    multiline:SetFullHeight(true)
+    multiline:SetText(exportData)
+    multiline:DisableButton(true)
+    frame:AddChild(multiline)
+    frame.multiline = multiline
 end
 
 function Alts:CreateAddAltFrame()
