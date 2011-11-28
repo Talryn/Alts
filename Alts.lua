@@ -285,7 +285,9 @@ function Alts:CheckAndUpdateFriends()
     
     for i = 1, numFriends do
         name, level, class, area, connected, status, note, RAF = GetFriendInfo(i)
-        friends[name] = (note or "")
+        if name and name ~= "" then
+            friends[name] = (note or "")
+        end
     end
     
     -- Check for removed friends
@@ -307,7 +309,7 @@ function Alts:CheckAndUpdateIgnores()
     
     for i = 1, numIgnores do
         name = GetIgnoreName(i)
-        if name ~= "?" then
+        if name and name ~= "?" then
             ignores[name] = true
         end
     end
