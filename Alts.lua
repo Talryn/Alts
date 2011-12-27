@@ -474,11 +474,13 @@ function Alts:UpdateGuild()
         --   * <name>
         --   * AKA: <name>
         --   * (<name>)
+        --   * ([name])
         local altMatch1 = "(.-)'s? [Aa][Ll][Tt]"
         local altMatch2 = "[Aa][Ll][Tt]:%s*([%a\128-\255]+)"
         local altMatch3 = "[Aa][Ll][Tt] [Oo][Ff] ([%a\128-\255]+)"
         local altMatch4 = "[Aa][Kk][Aa]:%s*([%a\128-\255]+)"
         local altMatch5 = "^[(]([%a\128-\255]+)[)]"
+        local altMatch6 = "^[%[]([%a\128-\255]+)[%]]"
 
         local funcs = {
             -- Check if the note format is "<name>'s alt"
@@ -500,6 +502,10 @@ function Alts:UpdateGuild()
             -- Check if the note format is "(<name>)"
             function(val)
                 return val:match(altMatch5)
+            end,
+            -- Check if the note format is "([name])"
+            function(val)
+                return val:match(altMatch6)
             end,
             -- Check if the note is just a name
             function(val)
