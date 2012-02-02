@@ -39,6 +39,7 @@ local defaults = {
 			hide = true,
 		},
 		verbose = true,
+		disableInCombat = true,
 		autoGuildImport = true,
 		showMainInTooltip = true,
 		showAltsInTooltip = true,
@@ -88,6 +89,8 @@ local defaults = {
 	}
 }
 
+local combat = false
+local monitor = true
 local options
 local playerName = ""
 local useLibAlts = false
@@ -163,7 +166,8 @@ local function AddMainNameForChat(message, name)
 end
 
 function Alts:AddMessage(frame, text, ...)
-    if text and type(text) == "string" then
+    -- If we are monitoring chat and the message is text then try to rewrite it.
+    if monitor and text and type(text) == "string" then
         text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddMainNameForChat)
     end
     return self.hooks[frame].AddMessage(frame, text, ...)
@@ -849,6 +853,18 @@ function Alts:GetOptions()
                                     return not self.db.profile.minimap.hide
                                   end,
                 			order = 10
+                        },
+                	    disableInCombat = {
+                            name = L["Disable in Combat"],
+                            desc = L["DisableInCombat_OptionDesc"],
+                            type = "toggle",
+                            set = function(info, val)
+                                    self.db.profile.disableInCombat = val
+                                end,
+                            get = function(info)
+                                    return self.db.profile.disableInCombat
+                                end,
+                			order = 12
                         },
                 	    verbose = {
                             name = L["Verbose"],
@@ -3053,6 +3069,9 @@ function Alts:OnEnable()
 
 	-- Register to receive the chat messages to watch for logons and who requests
 	self:RegisterEvent("CHAT_MSG_SYSTEM")
+    -- Watch for combat start and end events.
+	self:RegisterEvent("PLAYER_REGEN_ENABLED")
+	self:RegisterEvent("PLAYER_REGEN_DISABLED")
 
     --self:RegisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
     --self:RegisterEvent("BN_FRIEND_TOON_ONLINE")
@@ -3112,6 +3131,8 @@ end
 
 function Alts:OnDisable()
 	self:UnregisterEvent("CHAT_MSG_SYSTEM")
+	self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+	self:UnregisterEvent("PLAYER_REGEN_DISABLED")
 	-- Remove the menu items
 	self:RemoveSetMainMenuItem()
     self:UnhookChatFrames()
@@ -3225,8 +3246,8 @@ function Alts:DisplayMain(name)
     name = self:TitleCase(name)
 
 	local main = self:GetMain(name)
-    local alts = { self:GetAlts(name) }
-    local altList = strjoin(", ", unpack(alts))
+    --local alts = { self:GetAlts(name) }
+    --local altList = strjoin(", ", unpack(alts))
 
     if self.db.profile.singleLineChatDisplay == true and main and #main > 0 then
         local alts = { self:GetAlts(main) }
@@ -3281,6 +3302,24 @@ function Alts:CHAT_MSG_SYSTEM(event, message)
 	if name then
 		self:ScheduleTimer("DisplayMain", 0.1, name)
 	end
+end
+
+function Alts:PLAYER_REGEN_DISABLED()
+    combat = true
+    if self.db.profile.disableInCombat then
+        monitor = false
+    end
+    if self.db.profile.disableInCombat then
+        self:UnregisterEvent("CHAT_MSG_SYSTEM")
+    end
+end
+
+function Alts:PLAYER_REGEN_ENABLED()
+    combat = false
+    monitor = true
+    if self.db.profile.disableInCombat then
+        self:RegisterEvent("CHAT_MSG_SYSTEM")
+    end
 end
 
 function Alts:GUILD_ROSTER_UPDATE(event, message)
