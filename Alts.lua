@@ -344,7 +344,7 @@ function Alts:GuildContrib()
     for i = 1, numMembers do
         local name, rank, rankIndex, level, class, zone, publicnote,  
             officernote, online, status, classFileName, achPts, 
-            achRank, isMobile = GetGuildRosterInfo(i)
+            achRank, isMobile, canSoR = GetGuildRosterInfo(i)
 
         local years, months, days, hours = GetGuildRosterLastOnline(i)
         local lastOnline = 0
@@ -403,7 +403,7 @@ function Alts:UpdateGuild()
     for i = 1, numMembers do
         local name, rank, rankIndex, level, class, zone, publicnote,  
             officernote, online, status, classFileName, achPts, 
-            achRank, isMobile = GetGuildRosterInfo(i)
+            achRank, isMobile, canSoR = GetGuildRosterInfo(i)
         local years, months, days, hours = GetGuildRosterLastOnline(i)
 
         local lastOnline = 0
@@ -465,7 +465,7 @@ function Alts:UpdateGuild()
     for i = 1, numMembers do
         local name, rank, rankIndex, level, class, zone, publicnote,  
             officernote, online, status, classFileName, achPts, 
-            achRank, isMobile = GetGuildRosterInfo(i)
+            achRank, isMobile, canSoR = GetGuildRosterInfo(i)
         local years, months, days, hours = GetGuildRosterLastOnline(i)
 
         name = self:TitleCase(name)
@@ -1513,6 +1513,9 @@ end
 
 local GuildExportFrame = nil
 function Alts:ShowGuildExportFrame()
+	-- Request an update on the guild roster
+	GuildRoster()
+
     if GuildExportFrame then return end
 
 	local frame = AGU:Create("Frame")
@@ -1750,6 +1753,9 @@ end
 
 local ContribsFrame = nil
 function Alts:ShowContribFrame()
+	-- Request an update on the guild roster
+	GuildRoster()
+
     if ContribsFrame then return end
 
 	local frame = AGU:Create("Frame")
@@ -2559,7 +2565,7 @@ function Alts:GenerateGuildExport()
     for i = 1, numMembers do
         local name, rank, rankIndex, level, class, zone, publicnote,  
             officernote, online, status, classFileName, achPts, 
-            achRank, isMobile = GetGuildRosterInfo(i)
+            achRank, isMobile, canSoR = GetGuildRosterInfo(i)
         local weeklyXP, totalXP, weeklyRank, totalRank = GetGuildRosterContribution(i)
 
         exportChar = true
@@ -2571,25 +2577,25 @@ function Alts:GenerateGuildExport()
             end
         end
 
-        if exportChar == true then
+        if name and exportChar == true then
             wipe(fields)
             if self.db.profile.exportUseName == true then
-                tinsert(fields, name)
+                tinsert(fields, tostring(name or ""))
             end
             if self.db.profile.exportUseLevel == true then
-                tinsert(fields, level)
+                tinsert(fields, tostring(level or ""))
             end
             if self.db.profile.exportUseRank then 
-                tinsert(fields, escapeField(rank, quote))
+                tinsert(fields, escapeField(tostring(rank or ""), quote))
             end
             if self.db.profile.exportUseClass == true then
-                tinsert(fields, class)
+                tinsert(fields, tostring(class or ""))
             end
             if self.db.profile.exportUsePublicNote == true then
-                tinsert(fields, escapeField(publicnote, quote))
+                tinsert(fields, escapeField(tostring(publicnote or ""), quote))
             end
             if self.db.profile.exportUseOfficerNote == true then
-                tinsert(fields, escapeField(officernote, quote))
+                tinsert(fields, escapeField(tostring(officernote or ""), quote))
             end
 
             if self.db.profile.exportUseLastOnline == true then
@@ -2601,17 +2607,17 @@ function Alts:GenerateGuildExport()
                     local diff = (((years*365)+(months*30)+days)*24+hours)*60*60
                     lastOnline = time() - diff
                 end
-                tinsert(fields, date("%Y/%m/%d", lastOnline))
+                tinsert(fields, tostring(date("%Y/%m/%d", lastOnline)) or "")
             end
 
             if self.db.profile.exportUseAchvPoints == true then
-                tinsert(fields, achPts)
+                tinsert(fields, tostring(achPts or ""))
             end
             if self.db.profile.exportUseWeeklyXP == true then
-                tinsert(fields, weeklyXP)
+                tinsert(fields, tostring(weeklyXP or ""))
             end
             if self.db.profile.exportUseTotalXP == true then
-                tinsert(fields, totalXP)
+                tinsert(fields, tostring(totalXP or ""))
             end
 
             if self.db.profile.exportUseAlts == true then
@@ -2621,7 +2627,7 @@ function Alts:GenerateGuildExport()
                 else
                     altsStr = strjoin("|", LibAlts:GetAlts(name)) or ""
                 end
-                tinsert(fields, altsStr)
+                tinsert(fields, altsStr or "")
             end
 
             local line = tconcat(fields, delimiter)
