@@ -2546,6 +2546,8 @@ end
 
 local guildExportBuffer = {}
 function Alts:GenerateGuildExport()
+	if not IsInGuild() then return "" end
+
     local guildName = GetGuildInfo("player")
     local source = LibAlts.GUILD_PREFIX..guildName
     local guildExportText = ""
@@ -2557,10 +2559,10 @@ function Alts:GenerateGuildExport()
         quote = "\""
     end
 
-    local numMembers = GetNumGuildMembers(true)
+    local numMembers = GetNumGuildMembers()
     local exportChar
 
-    if not guildName or numMembers == 0 then return end
+    if not guildName or not numMembers or numMembers == 0 then return "" end
 
     for i = 1, numMembers do
         local name, rank, rankIndex, level, class, zone, publicnote,  
