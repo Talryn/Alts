@@ -1699,7 +1699,7 @@ function Alts:ShowGuildExportFrame()
     exportButton:SetText(L["Export"])
     exportButton:SetCallback("OnClick",
         function(widget)
-            local guildExportText = Alts:GenerateGuildExport(
+            local numChars, guildExportText = Alts:GenerateGuildExport(
                 self.db.profile.exportUseName,
                 self.db.profile.exportUseLevel,
                 self.db.profile.exportUseRank,
@@ -1713,6 +1713,8 @@ function Alts:ShowGuildExportFrame()
                 self.db.profile.exportUseAlts,
                 self.db.profile.exportEscape
             )
+			local exportStatusFmt = "Exported %d characters" 
+			frame:SetStatusText(exportStatusFmt:format(numChars))
             frame.multiline:SetText(guildExportText)
         end)
     frame:AddChild(exportButton)
@@ -2546,23 +2548,25 @@ end
 
 local guildExportBuffer = {}
 function Alts:GenerateGuildExport()
-	if not IsInGuild() then return "" end
+	if not IsInGuild() then return 0, "" end
 
     local guildName = GetGuildInfo("player")
     local source = LibAlts.GUILD_PREFIX..guildName
     local guildExportText = ""
 
+	local count = 0
     local delimiter = ","
     local fields = {}
     local quote = ""
+	local escapeChar = "\""
     if self.db.profile.exportEscape == true then
-        quote = "\""
+        quote = escapeChar
     end
 
     local numMembers = GetNumGuildMembers()
     local exportChar
 
-    if not guildName or not numMembers or numMembers == 0 then return "" end
+    if not guildName or not numMembers or numMembers == 0 then return 0, "" end
 
     for i = 1, numMembers do
         local name, rank, rankIndex, level, class, zone, publicnote,  
@@ -2581,6 +2585,7 @@ function Alts:GenerateGuildExport()
 
         if name and exportChar == true then
             wipe(fields)
+			count = count + 1
             if self.db.profile.exportUseName == true then
                 tinsert(fields, tostring(name or ""))
             end
@@ -2625,11 +2630,11 @@ function Alts:GenerateGuildExport()
             if self.db.profile.exportUseAlts == true then
                 local altsStr = ""
                 if self.db.profile.exportOnlyGuildAlts == true then
-                    altsStr = strjoin("|", LibAlts:GetAltsForSource(name, source)) or ""
+                    altsStr = strjoin(delimiter, LibAlts:GetAltsForSource(name, source)) or ""
                 else
-                    altsStr = strjoin("|", LibAlts:GetAlts(name)) or ""
+                    altsStr = strjoin(delimiter, LibAlts:GetAlts(name)) or ""
                 end
-                tinsert(fields, altsStr or "")
+                tinsert(fields, escapeField(altsStr or "",escapeChar))
             end
 
             local line = tconcat(fields, delimiter)
@@ -2644,7 +2649,7 @@ function Alts:GenerateGuildExport()
 
     wipe(guildExportBuffer)
 
-    return guildExportText
+    return count, guildExportText
 end
 
 function Alts:GuildExportHandler(input)
