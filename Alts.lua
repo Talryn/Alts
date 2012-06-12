@@ -1713,9 +1713,15 @@ function Alts:ShowGuildExportFrame()
                 self.db.profile.exportUseAlts,
                 self.db.profile.exportEscape
             )
-			local exportStatusFmt = L["GuildExport_StatusFormat"] 
-			frame:SetStatusText(exportStatusFmt:format(numChars))
+			local exportStatusFmt = L["GuildExport_StatusFormat"]
+			local clipboardCopy = L["ClipboardCopy_Default"]
+			if IsMacClient() then
+				clipboardCopy = L["ClipboardCopy_Mac"]
+			end
+			frame:SetStatusText(
+				exportStatusFmt:format(numChars) .. " " .. clipboardCopy)
             frame.multiline:SetText(guildExportText)
+			frame.multiline:SetFocus()
         end)
     frame:AddChild(exportButton)
 end
