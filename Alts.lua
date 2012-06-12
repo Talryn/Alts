@@ -1713,7 +1713,7 @@ function Alts:ShowGuildExportFrame()
                 self.db.profile.exportUseAlts,
                 self.db.profile.exportEscape
             )
-			local exportStatusFmt = "Exported %d characters" 
+			local exportStatusFmt = L["GuildExportStatusFormat"] 
 			frame:SetStatusText(exportStatusFmt:format(numChars))
             frame.multiline:SetText(guildExportText)
         end)
