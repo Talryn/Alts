@@ -784,6 +784,7 @@ function Alts:UpdateMainsTable(main)
             tinsert(MainsTable, {name, altList})
         end
     else
+		local name
         main = self:TitleCase(main)
         for i, v in ipairs(MainsTable) do
             if v then
@@ -3214,7 +3215,7 @@ function Alts:OnTooltipSetUnit(tooltip, ...)
 	-- If the unit exists and is a player then check if there is a note for it.
     if UnitExists(unitid) and UnitIsPlayer(unitid) then
 		-- Get the unit's name including the realm name
-		nameString = GetUnitName(unitid, true)
+		local nameString = GetUnitName(unitid, true)
         if not nameString then return end
 
         -- Check if a single line should be displayed for mains and alts
