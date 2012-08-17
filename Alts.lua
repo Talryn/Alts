@@ -27,7 +27,7 @@ local WHITE = "|cffffffff"
 -- Use local versions of standard LUA items for performance
 local tinsert, tremove, tContains = tinsert, tremove, tContains
 local tconcat, tsort = table.concat, table.sort
-local pairs, ipairs, unpack = pairs, ipairs, unpack
+local pairs, ipairs, unpack, next = pairs, ipairs, unpack, next
 
 -- Functions defined at the end of the file.
 local formatCharName
@@ -424,7 +424,8 @@ function Alts:UpdateGuild()
         self.db.realm.guilds[guildName] = self.db.realm.guilds[guildName] or {}
         self.db.realm.guildLog[guildName] = self.db.realm.guildLog[guildName] or {}
 
-        if self.db.realm.guilds[guildName] ~= {} then
+        if next(self.db.realm.guilds[guildName]) then
+			self:Print("Checking guild updates.")
             -- Compare the new guild roster to the old
             local name, lastOnline
             local joinFmt = "%s "..L["GuildLog_JoinedGuild"]
