@@ -39,6 +39,7 @@ local defaults = {
 			hide = true,
 		},
 		verbose = true,
+		debug = false,
 		disableInCombat = true,
 		autoGuildImport = true,
 		showMainInTooltip = true,
@@ -425,7 +426,7 @@ function Alts:UpdateGuild()
         self.db.realm.guildLog[guildName] = self.db.realm.guildLog[guildName] or {}
 
         if next(self.db.realm.guilds[guildName]) then
-			self:Print("Checking guild updates.")
+			if self.db.profile.debug then self:Print("Checking guild for updates...") end
             -- Compare the new guild roster to the old
             local name, lastOnline
             local joinFmt = "%s "..L["GuildLog_JoinedGuild"]
@@ -3111,6 +3112,7 @@ function Alts:OnEnable()
 
 	-- Register event to update friends data.
 	self:RegisterEvent("FRIENDLIST_UPDATE")
+	self:RegisterEvent("IGNORELIST_UPDATE")
 	-- Call ShowFriends to get the friend and ignore data updated.
     ShowFriends()
 
@@ -3350,7 +3352,13 @@ end
 
 function Alts:FRIENDLIST_UPDATE(event, message)
     self:UnregisterEvent("FRIENDLIST_UPDATE")
+	if self.db.profile.debug then self:Print("Friend list updated.") end
     self:CheckAndUpdateFriends()
+end
+
+function Alts:IGNORELIST_UPDATE(event, message)
+    self:UnregisterEvent("IGNORELIST_UPDATE")
+	if self.db.profile.debug then self:Print("Ignore list updated.") end
     self:CheckAndUpdateIgnores()
 end
 
