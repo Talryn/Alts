@@ -1,6 +1,6 @@
-## Interface: 40300
+## Interface: 50001
 ## Title: Alts
-## Notes: Manages main-alts relations.
+## Notes: Manages social information with a focus on main-alt associations.
 ## Author: Talryn
 ## Version: @project-version@
 ## OptionalDeps: Ace3, LibDeformat-3.0, lib-st, LibDataBroker-1.1, LibDBIcon-1.0
