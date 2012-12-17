@@ -1,17 +1,25 @@
-Alts = LibStub("AceAddon-3.0"):NewAddon("Alts", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+local _G = getfenv(0)
+
+local string = _G.string
+local table = _G.table
+local pairs = _G.pairs
+local ipairs = _G.ipairs
+local LibStub = _G.LibStub
+
+local Alts = LibStub("AceAddon-3.0"):NewAddon("Alts", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+
 local AGU = LibStub("AceGUI-3.0")
-
-local ADDON_NAME = ...
-local ADDON_VERSION = "@project-version@"
-
-local DEBUG = false
-
 local L = LibStub("AceLocale-3.0"):GetLocale("Alts", true)
 local LibDeformat = LibStub("LibDeformat-3.0")
 local LDB = LibStub("LibDataBroker-1.1")
 local icon = LibStub("LibDBIcon-1.0")
 local LibAlts = LibStub("LibAlts-1.0")
 local ScrollingTable = LibStub("ScrollingTable")
+
+local ADDON_NAME = ...
+local ADDON_VERSION = "@project-version@"
+
+local DEBUG = false
 
 -- Need to setup an AltHandler or Proxy so that it can be standalone if needed
 -- If using LibAlt then call LibAlt set, delete, and remove and allow the callback
@@ -27,7 +35,10 @@ local WHITE = "|cffffffff"
 -- Use local versions of standard LUA items for performance
 local tinsert, tremove, tContains = tinsert, tremove, tContains
 local tconcat, tsort = table.concat, table.sort
-local pairs, ipairs, unpack, next = pairs, ipairs, unpack, next
+local unpack, next = _G.unpack, _G.next
+local wipe = _G.wipe
+local tostring = _G.tostring
+local strjoin = _G.strjoin
 
 -- Functions defined at the end of the file.
 local formatCharName
@@ -137,18 +148,18 @@ local function ReverseTable(table)
 end
 
 function Alts:HookChatFrames()
-    for i = 1, NUM_CHAT_WINDOWS do
+    for i = 1, _G.NUM_CHAT_WINDOWS do
         local chatFrame = _G["ChatFrame" .. i]
-        if chatFrame ~= COMBATLOG then
+        if chatFrame ~= _G.COMBATLOG then
             self:RawHook(chatFrame, "AddMessage", true)
         end
     end
 end
 
 function Alts:UnhookChatFrames()
-    for i = 1, NUM_CHAT_WINDOWS do
+    for i = 1, _G.NUM_CHAT_WINDOWS do
         local chatFrame = _G["ChatFrame" .. i]
-        if chatFrame ~= COMBATLOG then
+        if chatFrame ~= _G.COMBATLOG then
             self:Unhook(chatFrame, "AddMessage")
         end
     end
@@ -168,7 +179,7 @@ end
 
 function Alts:AddMessage(frame, text, ...)
     -- If we are monitoring chat and the message is text then try to rewrite it.
-    if monitor and text and type(text) == "string" then
+    if monitor and text and _G.type(text) == "string" then
         text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddMainNameForChat)
     end
     return self.hooks[frame].AddMessage(frame, text, ...)
@@ -283,13 +294,14 @@ end
 
 function Alts:CheckAndUpdateFriends()
     local friends = {}
-    local numFriends = GetNumFriends()
+    local numFriends = _G.GetNumFriends()
     local strFmt = L["FriendsLog_RemovedFriend"]
     
     local name, level, class, area, connected, status, note, RAF
     
     for i = 1, numFriends do
-        name, level, class, area, connected, status, note, RAF = GetFriendInfo(i)
+        name, level, class, area, connected, status, note, RAF = 
+			_G.GetFriendInfo(i)
         if name and name ~= "" then
             friends[name] = (note or "")
         end
@@ -307,13 +319,13 @@ end
 
 function Alts:CheckAndUpdateIgnores()
     local ignores = {}
-    local numIgnores = GetNumIgnores()
+    local numIgnores = _G.GetNumIgnores()
     local strFmt = L["IgnoreLog_RemovedIgnore"]
     
     local name, value
     
     for i = 1, numIgnores do
-        name = GetIgnoreName(i)
+        name = _G.GetIgnoreName(i)
         if name and name ~= "?" then
             ignores[name] = true
         end
@@ -335,8 +347,8 @@ function Alts:GuildContrib()
     GuildXP.weekly.totalXP = 0
     GuildXP.total.totalXP = 0
     
-    local guildName = GetGuildInfo("player")
-    local numMembers = GetNumGuildMembers(true)
+    local guildName = _G.GetGuildInfo("player")
+    local numMembers = _G.GetNumGuildMembers(true)
     
     if not guildName or numMembers == 0 then return end
 
@@ -345,18 +357,18 @@ function Alts:GuildContrib()
     for i = 1, numMembers do
         local name, rank, rankIndex, level, class, zone, publicnote,  
             officernote, online, status, classFileName, achPts, 
-            achRank, isMobile, canSoR = GetGuildRosterInfo(i)
+            achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
 
-        local years, months, days, hours = GetGuildRosterLastOnline(i)
+        local years, months, days, hours = _G.GetGuildRosterLastOnline(i)
         local lastOnline = 0
         if online then
-            lastOnline = time()
+            lastOnline = _G.time()
         elseif years and months and days and hours then
             local diff = (((years*365)+(months*30)+days)*24+hours)*60*60
-            lastOnline = time() - diff
+            lastOnline = _G.time() - diff
         end
 
-        local weeklyXP, totalXP, weeklyRank, totalRank = GetGuildRosterContribution(i)
+        local weeklyXP, totalXP, weeklyRank, totalRank = _G.GetGuildRosterContribution(i)
 
         local main = (LibAlts:GetMainForSource(name, source) or name)
 
@@ -382,8 +394,8 @@ end
 function Alts:UpdateGuild()
     if not self.db.profile.autoGuildImport then return end
     
-    local guildName = GetGuildInfo("player")
-    local numMembers = GetNumGuildMembers(true)
+    local guildName = _G.GetGuildInfo("player")
+    local numMembers = _G.GetNumGuildMembers(true)
     
     if not guildName or numMembers == 0 then return end
 
@@ -404,15 +416,15 @@ function Alts:UpdateGuild()
     for i = 1, numMembers do
         local name, rank, rankIndex, level, class, zone, publicnote,  
             officernote, online, status, classFileName, achPts, 
-            achRank, isMobile, canSoR = GetGuildRosterInfo(i)
-        local years, months, days, hours = GetGuildRosterLastOnline(i)
+            achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
+        local years, months, days, hours = _G.GetGuildRosterLastOnline(i)
 
         local lastOnline = 0
         if online then
-            lastOnline = time()
+            lastOnline = _G.time()
         elseif years and months and days and hours then
             local diff = (((years*365)+(months*30)+days)*24+hours)*60*60
-            lastOnline = time() - diff
+            lastOnline = _G.time() - diff
         end
 
         guildMembers[LibAlts:TitleCase(name)] = lastOnline
@@ -437,7 +449,7 @@ function Alts:UpdateGuild()
                         self:Print(joinFmt:format(name))
                     end
                     tinsert(self.db.realm.guildLog[guildName],
-                        joinLogFmt:format(date("%Y/%m/%d %H:%M"), name))
+                        joinLogFmt:format(_G.date("%Y/%m/%d %H:%M"), name))
                 end 
             end
 
@@ -454,7 +466,7 @@ function Alts:UpdateGuild()
                         self:Print(leaveFmt:format(nameWithMain))
                     end
                     tinsert(self.db.realm.guildLog[guildName],
-                        leaveLogFmt:format(date("%Y/%m/%d %H:%M"), nameWithMain))
+                        leaveLogFmt:format(_G.date("%Y/%m/%d %H:%M"), nameWithMain))
                 end 
             end
         end
@@ -467,8 +479,8 @@ function Alts:UpdateGuild()
     for i = 1, numMembers do
         local name, rank, rankIndex, level, class, zone, publicnote,  
             officernote, online, status, classFileName, achPts, 
-            achRank, isMobile, canSoR = GetGuildRosterInfo(i)
-        local years, months, days, hours = GetGuildRosterLastOnline(i)
+            achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
+        local years, months, days, hours = _G.GetGuildRosterLastOnline(i)
 
         name = self:TitleCase(name)
 
@@ -659,7 +671,7 @@ function Alts:DeleteAlt(main, alt, source)
 	
     	if Mains then
     	    for i,v in ipairs(Mains) do
-    	        if k[1] == alt then
+    	        if v[1] == alt then
     	            tremove(Mains, i)
                 end
             end
@@ -679,7 +691,7 @@ function Alts:DeleteAlt(main, alt, source)
 	
     	if MainsBySource and MainsBySource[source] then
     	    for i,v in ipairs(MainsBySource[source]) do
-    	        if k[1] == alt then
+    	        if v[1] == alt then
     	            tremove(MainsBySource[source], i)
                 end
             end
@@ -1048,7 +1060,7 @@ function Alts:GetOptions()
                             type = "execute",
                             width = "normal",
                             func = function()
-                            	local optionsFrame = InterfaceOptionsFrame
+                            	local optionsFrame = _G.InterfaceOptionsFrame
                                 optionsFrame:Hide()
                                 self:GuildLogHandler("")
                             end,
@@ -1065,7 +1077,7 @@ function Alts:GetOptions()
                             type = "execute",
                             width = "normal",
                             func = function()
-                            	local optionsFrame = InterfaceOptionsFrame
+                            	local optionsFrame = _G.InterfaceOptionsFrame
                                 optionsFrame:Hide()
                                 self:GuildExportHandler("")
                             end,
@@ -1082,7 +1094,7 @@ function Alts:GetOptions()
                             type = "execute",
                             width = "normal",
                             func = function()
-                            	local optionsFrame = InterfaceOptionsFrame
+                            	local optionsFrame = _G.InterfaceOptionsFrame
                                 optionsFrame:Hide()
                                 self:GuildContribHandler("")
                             end,
@@ -1141,8 +1153,8 @@ function Alts:GetOptions()
 end
 
 function Alts:ShowOptions()
-	InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Notes)
-	InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
+	_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Notes)
+	_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
 end
 
 function Alts:OnInitialize()
@@ -1151,7 +1163,7 @@ function Alts:OnInitialize()
     Mains = ReverseTable(self.db.realm.alts)
 
     -- Register the options table
-    local displayName = GetAddOnMetadata(ADDON_NAME, "Title")
+    local displayName = _G.GetAddOnMetadata(ADDON_NAME, "Title")
 	local options = self:GetOptions()
     LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, options)
     self.optionsFrame = {}
@@ -1201,7 +1213,7 @@ function Alts:OnInitialize()
 		icon = "Interface\\Icons\\Achievement_Character_Human_Male.blp",
 		OnClick = function(clickedframe, button)
     		if button == "RightButton" then
-    			local optionsFrame = InterfaceOptionsFrame
+    			local optionsFrame = _G.InterfaceOptionsFrame
 
     			if optionsFrame:IsVisible() then
     				optionsFrame:Hide()
@@ -1213,7 +1225,7 @@ function Alts:OnInitialize()
     			if self:IsVisible() then
     				self:HideAltsWindow()
     			else
-        			local optionsFrame = InterfaceOptionsFrame
+        			local optionsFrame = _G.InterfaceOptionsFrame
     			    optionsFrame:Hide()
     				self:AltsHandler("")
     			end
@@ -1231,7 +1243,7 @@ function Alts:OnInitialize()
 	})
 	icon:Register("AltsLDB", altsLDB, self.db.profile.minimap)
 	
-	playerName = UnitName("player")
+	playerName = _G.UnitName("player")
 end
 
 function Alts:SetMainHandler(input)
@@ -1266,16 +1278,16 @@ function Alts:SetMainHandler(input)
 end
 
 function Alts:StaticPopupSetMain(alt, main)
-    StaticPopupDialogs["ALTS_SET_MAIN"] = StaticPopupDialogs["ALTS_SET_MAIN"] or {
+    _G.StaticPopupDialogs["ALTS_SET_MAIN"] = _G.StaticPopupDialogs["ALTS_SET_MAIN"] or {
         text = "Set the main for %s",
         maintext = "",
-        button1 = OKAY,
-        button2 = CANCEL,
+        button1 = _G.OKAY,
+        button2 = _G.CANCEL,
         hasEditBox = true,
         hasWideEditBox = true,
         enterClicksFirstButton = true,
         OnShow = function(this, data)
-            this.wideEditBox:SetText(StaticPopupDialogs["ALTS_SET_MAIN"].maintext or "")
+            this.wideEditBox:SetText(_G.StaticPopupDialogs["ALTS_SET_MAIN"].maintext or "")
             this.wideEditBox:SetFocus()
             this.wideEditBox:HighlightText()
         end,
@@ -1292,8 +1304,8 @@ function Alts:StaticPopupSetMain(alt, main)
         hideOnEscape = true
     }
 
-    StaticPopupDialogs["ALTS_SET_MAIN"].maintext = main
-    StaticPopup_Show("ALTS_SET_MAIN", alt)
+    _G.StaticPopupDialogs["ALTS_SET_MAIN"].maintext = main
+    _G.StaticPopup_Show("ALTS_SET_MAIN", alt)
 end
 
 function Alts:DelAltHandler(input)
@@ -1485,7 +1497,7 @@ function Alts:ShowGuildLogFrame()
     GuildLogFrame.scroll = scroll
 
     GuildLogFrame.update = function(value)
-        local guildName = GetGuildInfo("player")
+        local guildName = _G.GetGuildInfo("player")
         if not guildName then return end
         if not self.db.realm.guildLog[guildName] then return end
 
@@ -1517,7 +1529,7 @@ end
 local GuildExportFrame = nil
 function Alts:ShowGuildExportFrame()
 	-- Request an update on the guild roster
-	GuildRoster()
+	_G.GuildRoster()
 
     if GuildExportFrame then return end
 
@@ -1718,7 +1730,7 @@ function Alts:ShowGuildExportFrame()
             )
 			local exportStatusFmt = L["GuildExport_StatusFormat"]
 			local clipboardCopy = L["ClipboardCopy_Default"]
-			if IsMacClient() then
+			if _G.IsMacClient() then
 				clipboardCopy = L["ClipboardCopy_Mac"]
 			end
 			frame:SetStatusText(
@@ -1732,7 +1744,7 @@ end
 function Alts:CreateGuildContribExport(period)
     local table
     local totalXP = 0
-    if peroid == "Weekly" then
+    if period == "Weekly" then
         table = GuildXP.weekly.sorted
         totalXP = GuildXP.weekly.totalXP
     else
@@ -1765,7 +1777,7 @@ end
 local ContribsFrame = nil
 function Alts:ShowContribFrame()
 	-- Request an update on the guild roster
-	GuildRoster()
+	_G.GuildRoster()
 
     if ContribsFrame then return end
 
@@ -1877,7 +1889,7 @@ function Alts:ShowContribFrame()
         scroll:ReleaseChildren()
         scroll:PauseLayout()
         
-        local table
+        local table, totalXP
         if value == "Weekly" then
             table = GuildXP.weekly.sorted
             totalXP = GuildXP.weekly.totalXP
@@ -1931,7 +1943,7 @@ end
 
 local ExportFrame = nil
 function Alts:ShowExportFrame(exportFunc)
-    if not exportFunc or type(exportFunc) ~= "function" then return end 
+    if not exportFunc or _G.type(exportFunc) ~= "function" then return end 
 
     if ExportFrame then return end
 
@@ -1964,20 +1976,20 @@ function Alts:ShowExportFrame(exportFunc)
 end
 
 function Alts:CreateAddAltFrame()
-	local addalt = CreateFrame("Frame", "Alts_AddAltWindow", UIParent)
+	local addalt = _G.CreateFrame("Frame", "Alts_AddAltWindow", _G.UIParent)
 	addalt:SetFrameStrata("DIALOG")
 	addalt:SetToplevel(true)
 	addalt:SetWidth(400)
 	addalt:SetHeight(200)
-	addalt:SetPoint("CENTER", UIParent)
+	addalt:SetPoint("CENTER", _G.UIParent)
 	addalt:SetBackdrop(
 		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	addalt:SetBackdropColor(0,0,0,1)
 		
-	local editbox = CreateFrame("EditBox", nil, addalt, "InputBoxTemplate")
-	editbox:SetFontObject(ChatFontNormal)
+	local editbox = _G.CreateFrame("EditBox", nil, addalt, "InputBoxTemplate")
+	editbox:SetFontObject(_G.ChatFontNormal)
 	editbox:SetWidth(300)
 	editbox:SetHeight(35)
 	editbox:SetPoint("CENTER", addalt)
@@ -1996,7 +2008,7 @@ function Alts:CreateAddAltFrame()
 	        this:GetParent():Hide()
 	    end)
 
-	local savebutton = CreateFrame("Button", nil, addalt, "UIPanelButtonTemplate")
+	local savebutton = _G.CreateFrame("Button", nil, addalt, "UIPanelButtonTemplate")
 	savebutton:SetText(L["Save"])
 	savebutton:SetWidth(100)
 	savebutton:SetHeight(20)
@@ -2010,7 +2022,7 @@ function Alts:CreateAddAltFrame()
 	        self:EditAltsHandler(main)
 	    end)
 
-	local cancelbutton = CreateFrame("Button", nil, addalt, "UIPanelButtonTemplate")
+	local cancelbutton = _G.CreateFrame("Button", nil, addalt, "UIPanelButtonTemplate")
 	cancelbutton:SetText(L["Cancel"])
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
@@ -2051,12 +2063,12 @@ function Alts:CreateAddAltFrame()
 end
 
 function Alts:CreateAddMainFrame()
-	local addmain = CreateFrame("Frame", "Alts_AddMainWindow", UIParent)
+	local addmain = _G.CreateFrame("Frame", "Alts_AddMainWindow", _G.UIParent)
 	addmain:SetFrameStrata("DIALOG")
 	addmain:SetToplevel(true)
 	addmain:SetWidth(400)
 	addmain:SetHeight(200)
-	addmain:SetPoint("CENTER", UIParent)
+	addmain:SetPoint("CENTER", _G.UIParent)
 	addmain:SetBackdrop(
 		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
@@ -2072,8 +2084,8 @@ function Alts:CreateAddMainFrame()
 	mainlabel:SetPoint("TOP", headertext, "BOTTOM", 0, -30)
 	mainlabel:SetPoint("LEFT", addmain, "LEFT", 20, 0)
 
-	local mainname = CreateFrame("EditBox", "Alts_AddMain_MainName", addmain, "InputBoxTemplate")
-	mainname:SetFontObject(ChatFontNormal)
+	local mainname = _G.CreateFrame("EditBox", "Alts_AddMain_MainName", addmain, "InputBoxTemplate")
+	mainname:SetFontObject(_G.ChatFontNormal)
 	mainname:SetWidth(150)
 	mainname:SetHeight(35)
 	mainname:SetPoint("LEFT", mainlabel, "RIGHT", 30, 0)
@@ -2100,8 +2112,8 @@ function Alts:CreateAddMainFrame()
 	altlabel:SetText(L["Alt: "])
 	altlabel:SetPoint("TOPLEFT", mainlabel, "BOTTOMLEFT", 0, -30)
 
-	local altname = CreateFrame("EditBox", "Alts_AddMain_AltName", addmain, "InputBoxTemplate")
-	altname:SetFontObject(ChatFontNormal)
+	local altname = _G.CreateFrame("EditBox", "Alts_AddMain_AltName", addmain, "InputBoxTemplate")
+	altname:SetFontObject(_G.ChatFontNormal)
 	altname:SetWidth(150)
 	altname:SetHeight(35)
 	altname:SetPoint("LEFT", mainname, "LEFT")
@@ -2124,7 +2136,7 @@ function Alts:CreateAddMainFrame()
 	        this:GetParent():Hide()
 	    end)
 
-	local savebutton = CreateFrame("Button", nil, addmain, "UIPanelButtonTemplate")
+	local savebutton = _G.CreateFrame("Button", nil, addmain, "UIPanelButtonTemplate")
 	savebutton:SetText(L["Save"])
 	savebutton:SetWidth(100)
 	savebutton:SetHeight(20)
@@ -2143,7 +2155,7 @@ function Alts:CreateAddMainFrame()
             end
 	    end)
 
-	local cancelbutton = CreateFrame("Button", nil, addmain, "UIPanelButtonTemplate")
+	local cancelbutton = _G.CreateFrame("Button", nil, addmain, "UIPanelButtonTemplate")
 	cancelbutton:SetText(L["Cancel"])
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
@@ -2175,16 +2187,16 @@ function Alts:CreateAddMainFrame()
 end
 
 function Alts:CreateContribFrame()
-	local window = CreateFrame("Frame", "Alts_ContribWindow", UIParent)
+	local window = _G.CreateFrame("Frame", "Alts_ContribWindow", _G.UIParent)
 	window:SetFrameStrata("DIALOG")
 	window:SetToplevel(true)
 	window:SetWidth(430)
 	window:SetHeight(370)
 	if self.db.profile.remember_contrib_pos then
-        window:SetPoint("CENTER", UIParent, "CENTER",
+        window:SetPoint("CENTER", _G.UIParent, "CENTER",
             self.db.profile.contrib_window_x, self.db.profile.contrib_window_y)
     else
-	    window:SetPoint("CENTER", UIParent)
+	    window:SetPoint("CENTER", _G.UIParent)
     end
 	window:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
@@ -2241,7 +2253,7 @@ function Alts:CreateContribFrame()
 	table.frame:SetPoint("TOP", headertext, "BOTTOM", 0, -40)
 	table.frame:SetPoint("LEFT", window, "LEFT", 40, 0)
 
-	local closebutton = CreateFrame("Button", nil, window, "UIPanelButtonTemplate")
+	local closebutton = _G.CreateFrame("Button", nil, window, "UIPanelButtonTemplate")
 	closebutton:SetText(L["Close"])
 	closebutton:SetWidth(90)
 	closebutton:SetHeight(20)
@@ -2276,11 +2288,11 @@ function Alts:CreateContribFrame()
         function(self)
             self:StopMovingOrSizing()
 			if Alts.db.profile.remember_contrib_pos then
-    			local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    			local scale = self:GetEffectiveScale() / _G.UIParent:GetEffectiveScale()
     			local x, y = self:GetCenter()
     			x, y = x * scale, y * scale
-    			x = x - GetScreenWidth()/2
-    			y = y - GetScreenHeight()/2
+    			x = x - _G.GetScreenWidth()/2
+    			y = y - _G.GetScreenHeight()/2
     			x = x / self:GetScale()
     			y = y / self:GetScale()
     			Alts.db.profile.contrib_window_x, 
@@ -2296,16 +2308,16 @@ function Alts:CreateContribFrame()
 end
 
 function Alts:CreateAltsFrame()
-	local altswindow = CreateFrame("Frame", "Alts_AltsWindow", UIParent)
+	local altswindow = _G.CreateFrame("Frame", "Alts_AltsWindow", _G.UIParent)
 	altswindow:SetFrameStrata("DIALOG")
 	altswindow:SetToplevel(true)
 	altswindow:SetWidth(630)
 	altswindow:SetHeight(430)
 	if self.db.profile.remember_main_pos then
-        altswindow:SetPoint("CENTER", UIParent, "CENTER",
+        altswindow:SetPoint("CENTER", _G.UIParent, "CENTER",
             self.db.profile.main_window_x, self.db.profile.main_window_y)
     else
-	    altswindow:SetPoint("CENTER", UIParent)
+	    altswindow:SetPoint("CENTER", _G.UIParent)
     end
 	altswindow:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
@@ -2359,8 +2371,8 @@ function Alts:CreateAltsFrame()
 	headertext:SetPoint("TOP", altswindow, "TOP", 0, -20)
 	headertext:SetText(L["Alts"])
 
-	local searchterm = CreateFrame("EditBox", nil, altswindow, "InputBoxTemplate")
-	searchterm:SetFontObject(ChatFontNormal)
+	local searchterm = _G.CreateFrame("EditBox", nil, altswindow, "InputBoxTemplate")
+	searchterm:SetFontObject(_G.ChatFontNormal)
 	searchterm:SetWidth(300)
 	searchterm:SetHeight(35)
 	searchterm:SetPoint("TOPLEFT", altswindow, "TOPLEFT", 25, -50)
@@ -2371,28 +2383,28 @@ function Alts:CreateAltsFrame()
 	table.frame:SetPoint("TOP", searchterm, "BOTTOM", 0, -20)
 	table.frame:SetPoint("LEFT", altswindow, "LEFT", 20, 0)
 
-	local searchbutton = CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
+	local searchbutton = _G.CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
 	searchbutton:SetText(L["Search"])
 	searchbutton:SetWidth(100)
 	searchbutton:SetHeight(20)
 	searchbutton:SetPoint("LEFT", searchterm, "RIGHT", 10, 0)
 	searchbutton:SetScript("OnClick", function(this) this:GetParent().table:SortData() end)
 
-	local clearbutton = CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
+	local clearbutton = _G.CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
 	clearbutton:SetText(L["Clear"])
 	clearbutton:SetWidth(100)
 	clearbutton:SetHeight(20)
 	clearbutton:SetPoint("LEFT", searchbutton, "RIGHT", 10, 0)
 	clearbutton:SetScript("OnClick", function(this) this:GetParent().searchterm:SetText(""); this:GetParent().table:SortData(); end)
 
-	local closebutton = CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
+	local closebutton = _G.CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
 	closebutton:SetText(L["Close"])
 	closebutton:SetWidth(90)
 	closebutton:SetHeight(20)
 	closebutton:SetPoint("BOTTOM", altswindow, "BOTTOM", 0, 20)
 	closebutton:SetScript("OnClick", function(this) this:GetParent():Hide(); end)
 
-	local addbutton = CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
+	local addbutton = _G.CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
 	addbutton:SetText(L["Add"])
 	addbutton:SetWidth(90)
 	addbutton:SetHeight(20)
@@ -2405,7 +2417,7 @@ function Alts:CreateAltsFrame()
 		    addMainFrame:Raise()
 		end)
 
-	local deletebutton = CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
+	local deletebutton = _G.CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
 	deletebutton:SetText(L["Delete"])
 	deletebutton:SetWidth(90)
 	deletebutton:SetHeight(20)
@@ -2424,7 +2436,7 @@ function Alts:CreateAltsFrame()
 			end
 		end)
 
-	local editbutton = CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
+	local editbutton = _G.CreateFrame("Button", nil, altswindow, "UIPanelButtonTemplate")
 	editbutton:SetText(L["Edit"])
 	editbutton:SetWidth(90)
 	editbutton:SetHeight(20)
@@ -2459,7 +2471,7 @@ function Alts:CreateAltsFrame()
 		function(self, row)
 			local searchterm = searchterm:GetText()
 			if searchterm and #searchterm > 0 then
-				term = searchterm:lower()
+				local term = searchterm:lower()
 				if row[1]:lower():find(term) or row[2]:lower():find(term) then
 					return true
 				end
@@ -2485,11 +2497,11 @@ function Alts:CreateAltsFrame()
         function(self)
             self:StopMovingOrSizing()
 			if Alts.db.profile.remember_main_pos then
-    			local scale = self:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    			local scale = self:GetEffectiveScale() / _G.UIParent:GetEffectiveScale()
     			local x, y = self:GetCenter()
     			x, y = x * scale, y * scale
-    			x = x - GetScreenWidth()/2
-    			y = y - GetScreenHeight()/2
+    			x = x - _G.GetScreenWidth()/2
+    			y = y - _G.GetScreenHeight()/2
     			x = x / self:GetScale()
     			y = y / self:GetScale()
     			Alts.db.profile.main_window_x, 
@@ -2518,7 +2530,7 @@ function Alts:AltsHandler(input)
 	altsFrame.table:SortData()
 
     -- Hide the options frame if it is open.
-	local optionsFrame = InterfaceOptionsFrame
+	local optionsFrame = _G.InterfaceOptionsFrame
     optionsFrame:Hide()
 
 	altsFrame:Show()
@@ -2531,7 +2543,7 @@ function Alts:GuildContribHandler(input)
 --	contribFrame.table:SortData()
 
     -- Hide the options frame if it is open.
-	local optionsFrame = InterfaceOptionsFrame
+	local optionsFrame = _G.InterfaceOptionsFrame
     optionsFrame:Hide()
 
 --    contribFrame:Show()
@@ -2557,9 +2569,9 @@ end
 
 local guildExportBuffer = {}
 function Alts:GenerateGuildExport()
-	if not IsInGuild() then return 0, "" end
+	if not _G.IsInGuild() then return 0, "" end
 
-    local guildName = GetGuildInfo("player")
+    local guildName = _G.GetGuildInfo("player")
     local source = LibAlts.GUILD_PREFIX..guildName
     local guildExportText = ""
 
@@ -2572,7 +2584,7 @@ function Alts:GenerateGuildExport()
         quote = escapeChar
     end
 
-    local numMembers = GetNumGuildMembers()
+    local numMembers = _G.GetNumGuildMembers()
     local exportChar
 
     if not guildName or not numMembers or numMembers == 0 then return 0, "" end
@@ -2580,8 +2592,8 @@ function Alts:GenerateGuildExport()
     for i = 1, numMembers do
         local name, rank, rankIndex, level, class, zone, publicnote,  
             officernote, online, status, classFileName, achPts, 
-            achRank, isMobile, canSoR = GetGuildRosterInfo(i)
-        local weeklyXP, totalXP, weeklyRank, totalRank = GetGuildRosterContribution(i)
+            achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
+        local weeklyXP, totalXP, weeklyRank, totalRank = _G.GetGuildRosterContribution(i)
 
         exportChar = true
 
@@ -2615,15 +2627,15 @@ function Alts:GenerateGuildExport()
             end
 
             if self.db.profile.exportUseLastOnline == true then
-                local years, months, days, hours = GetGuildRosterLastOnline(i)
+                local years, months, days, hours = _G.GetGuildRosterLastOnline(i)
                 local lastOnline = 0
                 if online then
-                    lastOnline = time()
+                    lastOnline = _G.time()
                 elseif years and months and days and hours then
                     local diff = (((years*365)+(months*30)+days)*24+hours)*60*60
-                    lastOnline = time() - diff
+                    lastOnline = _G.time() - diff
                 end
-                tinsert(fields, tostring(date("%Y/%m/%d", lastOnline)) or "")
+                tinsert(fields, tostring(_G.date("%Y/%m/%d", lastOnline)) or "")
             end
 
             if self.db.profile.exportUseAchvPoints == true then
@@ -2666,12 +2678,12 @@ function Alts:GuildExportHandler(input)
 end
 
 function Alts:CreateEditAltsFrame()
-	local editaltswindow = CreateFrame("Frame", "Alts_EditAltsWindow", UIParent)
+	local editaltswindow = _G.CreateFrame("Frame", "Alts_EditAltsWindow", _G.UIParent)
 	editaltswindow:SetFrameStrata("DIALOG")
 	editaltswindow:SetToplevel(true)
 	editaltswindow:SetWidth(400)
 	editaltswindow:SetHeight(300)
-	editaltswindow:SetPoint("CENTER", UIParent)
+	editaltswindow:SetPoint("CENTER", _G.UIParent)
 	editaltswindow:SetBackdrop(
 		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
@@ -2715,7 +2727,7 @@ function Alts:CreateEditAltsFrame()
 	table.frame:SetPoint("TOP", charname, "BOTTOM", 0, -30)
 	table.frame:SetPoint("CENTER", editaltswindow, "CENTER", 0, 0)
 
-	local addbutton = CreateFrame("Button", nil, editaltswindow, "UIPanelButtonTemplate")
+	local addbutton = _G.CreateFrame("Button", nil, editaltswindow, "UIPanelButtonTemplate")
 	addbutton:SetText(L["Add"])
 	addbutton:SetWidth(100)
 	addbutton:SetHeight(20)
@@ -2727,7 +2739,7 @@ function Alts:CreateEditAltsFrame()
 			frame:Hide()
     	end)
 
-	local deletebutton = CreateFrame("Button", nil, editaltswindow, "UIPanelButtonTemplate")
+	local deletebutton = _G.CreateFrame("Button", nil, editaltswindow, "UIPanelButtonTemplate")
 	deletebutton:SetText(L["Delete"])
 	deletebutton:SetWidth(100)
 	deletebutton:SetHeight(20)
@@ -2746,7 +2758,7 @@ function Alts:CreateEditAltsFrame()
     		end
     	end)
 
-	local closebutton = CreateFrame("Button", nil, editaltswindow, "UIPanelButtonTemplate")
+	local closebutton = _G.CreateFrame("Button", nil, editaltswindow, "UIPanelButtonTemplate")
 	closebutton:SetText(L["Close"])
 	closebutton:SetWidth(100)
 	closebutton:SetHeight(20)
@@ -2783,20 +2795,20 @@ function Alts:CreateEditAltsFrame()
 end
 
 function Alts:CreateSetMainFrame()
-	local setmain = CreateFrame("Frame", "Alts_SetMainWindow", UIParent)
+	local setmain = _G.CreateFrame("Frame", "Alts_SetMainWindow", _G.UIParent)
 	setmain:SetFrameStrata("DIALOG")
 	setmain:SetToplevel(true)
 	setmain:SetWidth(400)
 	setmain:SetHeight(200)
-	setmain:SetPoint("CENTER", UIParent)
+	setmain:SetPoint("CENTER", _G.UIParent)
 	setmain:SetBackdrop(
 		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	setmain:SetBackdropColor(0,0,0,1)
 		
-	local editbox = CreateFrame("EditBox", nil, setmain, "InputBoxTemplate")
-	editbox:SetFontObject(ChatFontNormal)
+	local editbox = _G.CreateFrame("EditBox", nil, setmain, "InputBoxTemplate")
+	editbox:SetFontObject(_G.ChatFontNormal)
 	editbox:SetWidth(300)
 	editbox:SetHeight(35)
 	editbox:SetPoint("CENTER", setmain)
@@ -2813,7 +2825,7 @@ function Alts:CreateSetMainFrame()
 	        this:GetParent():Hide();
 	    end)
 
-	local savebutton = CreateFrame("Button", nil, setmain, "UIPanelButtonTemplate")
+	local savebutton = _G.CreateFrame("Button", nil, setmain, "UIPanelButtonTemplate")
 	savebutton:SetText(L["Save"])
 	savebutton:SetWidth(100)
 	savebutton:SetHeight(20)
@@ -2825,7 +2837,7 @@ function Alts:CreateSetMainFrame()
 	        frame:Hide()
 	    end)
 
-	local cancelbutton = CreateFrame("Button", nil, setmain, "UIPanelButtonTemplate")
+	local cancelbutton = _G.CreateFrame("Button", nil, setmain, "UIPanelButtonTemplate")
 	cancelbutton:SetText(L["Cancel"])
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
@@ -2862,12 +2874,12 @@ function Alts:CreateSetMainFrame()
 end
 
 function Alts:CreateConfirmDeleteFrame()
-	local deletewindow = CreateFrame("Frame", "Alts_ConfirmDeleteWindow", UIParent)
+	local deletewindow = _G.CreateFrame("Frame", "Alts_ConfirmDeleteWindow", _G.UIParent)
 	deletewindow:SetFrameStrata("DIALOG")
 	deletewindow:SetToplevel(true)
 	deletewindow:SetWidth(400)
 	deletewindow:SetHeight(250)
-	deletewindow:SetPoint("CENTER", UIParent)
+	deletewindow:SetPoint("CENTER", _G.UIParent)
 	deletewindow:SetBackdrop(
 		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
@@ -2896,7 +2908,7 @@ function Alts:CreateConfirmDeleteFrame()
 	mainname:SetFont(mainname:GetFont(), 14)
 	mainname:SetTextColor(1.0,1.0,1.0,1)
 
-	local deletebutton = CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
+	local deletebutton = _G.CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
 	deletebutton:SetText(L["Delete"])
 	deletebutton:SetWidth(100)
 	deletebutton:SetHeight(20)
@@ -2912,7 +2924,7 @@ function Alts:CreateConfirmDeleteFrame()
 	        self:EditAltsHandler(mainname:GetText())
 	    end)
 
-	local cancelbutton = CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
+	local cancelbutton = _G.CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
 	cancelbutton:SetText(L["Cancel"])
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
@@ -2944,12 +2956,12 @@ function Alts:CreateConfirmDeleteFrame()
 end
 
 function Alts:CreateConfirmMainDeleteFrame()
-	local deletewindow = CreateFrame("Frame", "Alts_ConfirmMainDeleteWindow", UIParent)
+	local deletewindow = _G.CreateFrame("Frame", "Alts_ConfirmMainDeleteWindow", _G.UIParent)
 	deletewindow:SetFrameStrata("DIALOG")
 	deletewindow:SetToplevel(true)
 	deletewindow:SetWidth(400)
 	deletewindow:SetHeight(200)
-	deletewindow:SetPoint("CENTER", UIParent)
+	deletewindow:SetPoint("CENTER", _G.UIParent)
 	deletewindow:SetBackdrop(
 		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
@@ -2971,7 +2983,7 @@ function Alts:CreateConfirmMainDeleteFrame()
 	mainname:SetFont(mainname:GetFont(), 14)
 	mainname:SetTextColor(1.0,1.0,1.0,1)
 
-	local deletebutton = CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
+	local deletebutton = _G.CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
 	deletebutton:SetText(L["Delete"])
 	deletebutton:SetWidth(100)
 	deletebutton:SetHeight(20)
@@ -2985,7 +2997,7 @@ function Alts:CreateConfirmMainDeleteFrame()
             altsFrame:Show()
 	    end)
 
-	local cancelbutton = CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
+	local cancelbutton = _G.CreateFrame("Button", nil, deletewindow, "UIPanelButtonTemplate")
 	cancelbutton:SetText(L["Cancel"])
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
@@ -3084,7 +3096,7 @@ function Alts:OnEnable()
     -- Called when the addon is enabled
 
     -- Hook the game tooltip so we can add character Notes
-    self:HookScript(GameTooltip, "OnTooltipSetUnit")
+    self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
 
 	-- Hook the friends frame tooltip
 	--self:HookScript("FriendsFrameTooltip_Show")
@@ -3100,7 +3112,7 @@ function Alts:OnEnable()
 
     -- Build reverse lookup tables for other guilds.
     for k,v in pairs(self.db.realm.altsBySource) do
-        local guildName = GetGuildInfo("player")
+        local guildName = _G.GetGuildInfo("player")
         if not (k == guildName and self.db.profile.autoGuildImport) then
             MainsBySource[k] = ReverseTable(self.db.realm.altsBySource[k])
         end
@@ -3108,13 +3120,13 @@ function Alts:OnEnable()
 
 	-- Register event and call roster to import guild members and alts
 	self:RegisterEvent("GUILD_ROSTER_UPDATE")
-    GuildRoster()
+    _G.GuildRoster()
 
 	-- Register event to update friends data.
 	self:RegisterEvent("FRIENDLIST_UPDATE")
 	self:RegisterEvent("IGNORELIST_UPDATE")
 	-- Call ShowFriends to get the friend and ignore data updated.
-    ShowFriends()
+    _G.ShowFriends()
 
     -- Populate the MainsTable
     self:UpdateMainsTable()
@@ -3162,25 +3174,25 @@ function Alts:OnDisable()
 end
 
 function Alts:AddSetMainMenuItem()
-	UnitPopupButtons["SET_MAIN"] = {text = L["Set Main"], dist = 0}
+	_G.UnitPopupButtons["SET_MAIN"] = {text = L["Set Main"], dist = 0}
 
 	self:SecureHook("UnitPopup_OnClick", "SetMainMenuClick")
 
-	tinsert(UnitPopupMenus["PLAYER"], (#UnitPopupMenus["PLAYER"])-1, "SET_MAIN")
-	tinsert(UnitPopupMenus["PARTY"], (#UnitPopupMenus["PARTY"])-1, "SET_MAIN")
-	tinsert(UnitPopupMenus["FRIEND"], (#UnitPopupMenus["FRIEND"])-1, "SET_MAIN")
-	tinsert(UnitPopupMenus["FRIEND_OFFLINE"], (#UnitPopupMenus["FRIEND_OFFLINE"])-1, "SET_MAIN")
-	tinsert(UnitPopupMenus["RAID_PLAYER"], (#UnitPopupMenus["RAID_PLAYER"])-1, "SET_MAIN")
+	tinsert(_G.UnitPopupMenus["PLAYER"], (#_G.UnitPopupMenus["PLAYER"])-1, "SET_MAIN")
+	tinsert(_G.UnitPopupMenus["PARTY"], (#_G.UnitPopupMenus["PARTY"])-1, "SET_MAIN")
+	tinsert(_G.UnitPopupMenus["FRIEND"], (#_G.UnitPopupMenus["FRIEND"])-1, "SET_MAIN")
+	tinsert(_G.UnitPopupMenus["FRIEND_OFFLINE"], (#_G.UnitPopupMenus["FRIEND_OFFLINE"])-1, "SET_MAIN")
+	tinsert(_G.UnitPopupMenus["RAID_PLAYER"], (#_G.UnitPopupMenus["RAID_PLAYER"])-1, "SET_MAIN")
 end
 
 function Alts:RemoveSetMainMenuItem()
-	UnitPopupButtons["SET_MAIN"] = nil
+	_G.UnitPopupButtons["SET_MAIN"] = nil
 
 	self:unhook("UnitPopup_OnClick")
 end
 
 function Alts:SetMainMenuClick(self)
-	local menu = UIDROPDOWNMENU_INIT_MENU
+	local menu = _G.UIDROPDOWNMENU_INIT_MENU
 	local button = self.value
 	if button == "SET_MAIN" then
 		local fullname = nil
@@ -3216,9 +3228,9 @@ function Alts:OnTooltipSetUnit(tooltip, ...)
     local name, unitid = tooltip:GetUnit()
 
 	-- If the unit exists and is a player then check if there is a note for it.
-    if UnitExists(unitid) and UnitIsPlayer(unitid) then
+    if _G.UnitExists(unitid) and _G.UnitIsPlayer(unitid) then
 		-- Get the unit's name including the realm name
-		local nameString = GetUnitName(unitid, true)
+		local nameString = _G.GetUnitName(unitid, true)
         if not nameString then return end
 
         -- Check if a single line should be displayed for mains and alts
@@ -3313,13 +3325,13 @@ function Alts:CHAT_MSG_SYSTEM(event, message)
 	local name
 	
 	if self.db.profile.showInfoOnWho then
-	    name = LibDeformat(message, WHO_LIST_FORMAT)
+	    name = LibDeformat(message, _G.WHO_LIST_FORMAT)
 	end
 	if self.db.profile.showInfoOnLogon and not name then 
-	    name = LibDeformat(message, WHO_LIST_GUILD_FORMAT)
+	    name = LibDeformat(message, _G.WHO_LIST_GUILD_FORMAT)
 	end
 	if self.db.profile.showInfoOnLogon and not name then
-	    name = LibDeformat(message, ERR_FRIEND_ONLINE_SS)
+	    name = LibDeformat(message, _G.ERR_FRIEND_ONLINE_SS)
 	end
 
 	if name then
@@ -3363,13 +3375,13 @@ function Alts:IGNORELIST_UPDATE(event, message)
 end
 
 function Alts:BN_FRIEND_ACCOUNT_ONLINE(event, message)
-    for i = 1, BNGetNumFriends() do
+    for i = 1, _G.BNGetNumFriends() do
         local presenceID, givenName, surname, toonName, toonID, client, 
             isOnline, lastOnline, isAFK, isDND, messageText, noteText, 
-            isFriend, unknown = BNGetFriendInfo(i)
+            isFriend, unknown = _G.BNGetFriendInfo(i)
         if presenceID == message then
             self:Print(presenceID..","..givenName..","..surname..","..toonName..","..
-                toonID..","..client..","..isOnline..","..date("%c",lastOnline)..
+                toonID..","..client..","..isOnline..",".._G.date("%c",lastOnline)..
                 ","..isAFK..","
                 ..isDND..","..messageText or "nil"..","..noteText or "nil"..","..
                 isFriend)
