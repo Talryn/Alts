@@ -1157,6 +1157,18 @@ function Alts:ShowOptions()
 	_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
 end
 
+function Alts:AltsDebugHandler(input)
+	if input and #input > 0 and input == "on" then
+		self.db.profile.debug = true
+		self:Print("Debugging enabled.")
+	elseif input and #input > 0 and input == "off" then
+		self.db.profile.debug = false
+		self:Print("Debugging disabled.")
+	else
+		self:Print("Debugging is "..(self.db.profile.debug and "on" or "off"))
+	end
+end
+	
 function Alts:OnInitialize()
     -- Called when the addon is loaded
     self.db = LibStub("AceDB-3.0"):New("AltsDB", defaults, "Default")
@@ -1197,6 +1209,7 @@ function Alts:OnInitialize()
     end
 
 	self:RegisterChatCommand("alts", "AltsHandler")
+	self:RegisterChatCommand("altsdebug", "AltsDebugHandler")
 	self:RegisterChatCommand("setmain", "SetMainHandler")
 	self:RegisterChatCommand("delalt", "DelAltHandler")
 	self:RegisterChatCommand("getalts", "GetAltsHandler")
@@ -3359,6 +3372,7 @@ end
 
 function Alts:GUILD_ROSTER_UPDATE(event, message)
     self:UnregisterEvent("GUILD_ROSTER_UPDATE")
+	if self.db.profile.debug then self:Print("Guild roster updated.") end
     self:UpdateGuild()
 end
 
