@@ -101,6 +101,7 @@ local defaults = {
 	}
 }
 
+local guildUpdateTimer = nil
 local combat = false
 local monitor = true
 local options
@@ -392,6 +393,7 @@ function Alts:GuildContrib()
 end
 
 function Alts:UpdateGuild()
+	guildUpdateTimer = nil
     if not self.db.profile.autoGuildImport then return end
     
     local guildName = _G.GetGuildInfo("player")
@@ -3373,7 +3375,9 @@ end
 function Alts:GUILD_ROSTER_UPDATE(event, message)
     self:UnregisterEvent("GUILD_ROSTER_UPDATE")
 	if self.db.profile.debug then self:Print("Guild roster updated.") end
-    self:UpdateGuild()
+	if not guildUpdateTimer then
+		guildUpdateTimer = self:ScheduleTimer("UpdateGuild", 5)
+	end
 end
 
 function Alts:FRIENDLIST_UPDATE(event, message)
