@@ -87,7 +87,14 @@ local defaults = {
 		exportOnlyGuildAlts = true,
 		reportRemovedFriends = true,
 		reportRemovedIgnores = true,
-		reportGuildChanges = true
+		reportGuildChanges = true,
+		menusToModify = {
+			["PLAYER"] = true, 
+			["PARTY"] = true, 
+			["FRIEND"] = true, 
+			["FRIEND_OFFLINE"] = true, 
+			["RAID_PLAYER"] = true,
+		},
 	},
 	realm = {
 	    alts = {},
@@ -3171,7 +3178,7 @@ function Alts:OnEnable()
 	confirmMainDeleteFrame = self:CreateConfirmMainDeleteFrame()
 
 	-- Add the Edit Note menu item on unit frames
-	self:AddSetMainMenuItem()
+	self:AddToUnitPopupMenu()
 
     -- Hook chat frames so we can edit the messages
     if self.db.profile.showMainsInChat then
@@ -3184,44 +3191,60 @@ function Alts:OnDisable()
 	self:UnregisterEvent("PLAYER_REGEN_ENABLED")
 	self:UnregisterEvent("PLAYER_REGEN_DISABLED")
 	-- Remove the menu items
-	self:RemoveSetMainMenuItem()
+	self:RemoveFromUnitPopupMenu()
     self:UnhookChatFrames()
 end
 
-function Alts:AddSetMainMenuItem()
-	_G.UnitPopupButtons["SET_MAIN"] = {text = L["Set Main"], dist = 0}
+function Alts:AddToUnitPopupMenu()
+	_G.UnitPopupButtons["ALTS_SET_MAIN"] = {text = L["Set Main"], dist = 0}
 
-	self:SecureHook("UnitPopup_OnClick", "SetMainMenuClick")
-
-	tinsert(_G.UnitPopupMenus["PLAYER"], (#_G.UnitPopupMenus["PLAYER"])-1, "SET_MAIN")
-	tinsert(_G.UnitPopupMenus["PARTY"], (#_G.UnitPopupMenus["PARTY"])-1, "SET_MAIN")
-	tinsert(_G.UnitPopupMenus["FRIEND"], (#_G.UnitPopupMenus["FRIEND"])-1, "SET_MAIN")
-	tinsert(_G.UnitPopupMenus["FRIEND_OFFLINE"], (#_G.UnitPopupMenus["FRIEND_OFFLINE"])-1, "SET_MAIN")
-	tinsert(_G.UnitPopupMenus["RAID_PLAYER"], (#_G.UnitPopupMenus["RAID_PLAYER"])-1, "SET_MAIN")
-end
-
-function Alts:RemoveSetMainMenuItem()
-	_G.UnitPopupButtons["SET_MAIN"] = nil
-
-	self:unhook("UnitPopup_OnClick")
-end
-
-function Alts:SetMainMenuClick(self)
-	local menu = _G.UIDROPDOWNMENU_INIT_MENU
-	local button = self.value
-	if button == "SET_MAIN" then
-		local fullname = nil
-		local name = menu.name
-		local server = menu.server
-		if server and #server > 0 then
-			local strFormat = "%s - %s"
-			fullname = strFormat:format(name, server)
-		else
-			fullname = name
+	for menu, enabled in pairs(self.db.profile.menusToModify) do
+		if menu and enabled then
+			tinsert(_G.UnitPopupMenus[menu], 
+				#_G.UnitPopupMenus[menu], 
+				"ALTS_SET_MAIN")
 		end
-
-		Alts:SetMainHandler(fullname)
 	end
+
+	self:SecureHook("UnitPopup_ShowMenu")
+end
+
+function Alts:RemoveFromUnitPopupMenu()
+	self:Unhook("UnitPopup_ShowMenu")
+
+	for menu in pairs(_G.UnitPopupMenus) do
+		for i = #_G.UnitPopupMenus[menu], 1, -1 do
+			if _G.UnitPopupMenus[menu][i] == "ALTS_SET_MAIN" then
+				tremove(_G.UnitPopupMenus[menu], i)
+				break
+			end
+		end
+	end
+
+	_G.UnitPopupButtons["ALTS_SET_MAIN"] = nil
+end
+
+function Alts:UnitPopup_ShowMenu(dropdownMenu, which, unit, name, userData, ...)
+	for i = 1, _G.UIDROPDOWNMENU_MAXBUTTONS do
+		local button = _G["DropDownList".._G.UIDROPDOWNMENU_MENU_LEVEL.."Button"..i]
+		if button.value == "ALTS_SET_MAIN" then
+		    button.func = Alts.SetMainMenuClick
+		end
+	end
+end
+
+function Alts.SetMainMenuClick()
+	local menu = _G.UIDROPDOWNMENU_INIT_MENU
+	local fullname = nil
+	local name = menu.name
+	local server = menu.server
+	if server and #server > 0 then
+		local strFormat = "%s - %s"
+		fullname = strFormat:format(name, server)
+	else
+		fullname = name
+	end
+	Alts:SetMainHandler(fullname)
 end
 
 function Alts:IsVisible()
