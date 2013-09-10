@@ -3239,7 +3239,7 @@ function Alts.SetMainMenuClick()
 	local name = menu.name
 	local server = menu.server
 	if server and #server > 0 then
-		local strFormat = "%s - %s"
+		local strFormat = "%s-%s"
 		fullname = strFormat:format(name, server)
 	else
 		fullname = name
