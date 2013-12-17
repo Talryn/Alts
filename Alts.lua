@@ -6,8 +6,10 @@ local pairs = _G.pairs
 local ipairs = _G.ipairs
 local LibStub = _G.LibStub
 
-local Alts = LibStub("AceAddon-3.0"):NewAddon("Alts", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+local ADDON_NAME, AddonData = ...
 
+local Alts = LibStub("AceAddon-3.0"):NewAddon("Alts", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
+local AltsDB = AddonData.AltsDB
 local AGU = LibStub("AceGUI-3.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("Alts", true)
 local LibDeformat = LibStub("LibDeformat-3.0")
@@ -16,7 +18,6 @@ local icon = LibStub("LibDBIcon-1.0")
 local LibAlts = LibStub("LibAlts-1.0")
 local ScrollingTable = LibStub("ScrollingTable")
 
-local ADDON_NAME = ...
 local ADDON_VERSION = "@project-version@"
 
 local DEBUG = false
@@ -36,12 +37,11 @@ local WHITE = "|cffffffff"
 local tinsert, tremove, tContains = tinsert, tremove, tContains
 local tconcat, tsort = table.concat, table.sort
 local unpack, next = _G.unpack, _G.next
+local select = _G.select
 local wipe = _G.wipe
 local tostring = _G.tostring
-local strjoin = _G.strjoin
 
 -- Functions defined at the end of the file.
-local formatCharName
 local wrap
 
 local defaults = {
@@ -113,7 +113,8 @@ local combat = false
 local monitor = true
 local options
 local playerName = ""
-local useLibAlts = false
+local playerRealm = ""
+local playerRealmAbbr = ""
 local altsLDB = nil
 local altsFrame = nil
 local contribFrame = nil
@@ -123,9 +124,6 @@ local addMainFrame = nil
 local editAltsFrame = nil
 local confirmDeleteFrame = nil
 local confirmMainDeleteFrame = nil
-local Mains = {}
-local MainsBySource = {}
-local AllMains = {}
 local MainsTable = {}
 local EditAltsTable = {}
 local GuildXP = {
@@ -140,20 +138,6 @@ local GuildXP = {
         totalXP = 0
     }
 }
-
-local function ReverseTable(table)
-	local reverse = {}
-	
-	if table then
-    	for k,v in pairs(table) do
-    		for i,a in ipairs(v) do
-    			reverse[a] = k
-    		end
-    	end
-	end
-
-	return reverse
-end
 
 function Alts:HookChatFrames()
     for i = 1, _G.NUM_CHAT_WINDOWS do
@@ -175,10 +159,10 @@ end
 
 local function AddMainNameForChat(message, name)
     if name and #name > 0 and name ~= playerName then
-        local main = LibAlts:GetMain(name)
+        local main = AltsDB:GetMainForAlt(name)
         if main and #main > 0 then
             local messageFmt = "%s (%s)"
-            return messageFmt:format(message, main)
+            return messageFmt:format(message, AltsDB:FormatUnitName(main, true))
         end
     end
     
@@ -191,113 +175,6 @@ function Alts:AddMessage(frame, text, ...)
         text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddMainNameForChat)
     end
     return self.hooks[frame].AddMessage(frame, text, ...)
-end
-
---- Returns a name formatted in title case (i.e., first character upper case, the rest lower).
--- @name :TitleCase
--- @param name The name to be converted.
--- @return string The converted name.
-function Alts:TitleCase(name)
-    if not name then return "" end
-    if #name == 0 then return "" end
-
-    local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
-    name = name:lower()
-    return name:gsub(MULTIBYTE_FIRST_CHAR, string.upper, 1)
-end
-
---- Remove a data source, including all main-alt relationships.
--- @name :RemoveSource
--- @param source Data source to be removed.
-function Alts:RemoveSource(source)
-    if self.db.realm.altsBySource[source] then
-        wipe(self.db.realm.altsBySource[source])
-        self.db.realm.altsBySource[source] = nil
-    end
-    if MainsBySource[source] then
-        wipe(MainsBySource[source])
-        MainsBySource[source] = nil
-    end
-    
-    self:UpdateMainsTable()
-end
-
---- Define a main-alt relationship.
--- @name :SetAlt
--- @param main Name of the main character.
--- @param alt Name of the alt character.
--- @param source The data source to store it in.
-function Alts:SetAlt(main, alt, source)
-    if not main or not alt then return end
-    
-    main = self:TitleCase(main)
-    alt = self:TitleCase(alt)
-
-    if main then
-        self:UpdateMainsTable(main)
-    end
-
-    if not source then
-        self.db.realm.alts[main] = self.db.realm.alts[main] or {}
-        for i,v in ipairs(self.db.realm.alts[main]) do
-            if v == alt then
-                return
-            end
-        end
-
-        tinsert(self.db.realm.alts[main], alt)
-    
-        if Mains then
-            Mains[alt] = main
-        end
-    else
-        self.db.realm.altsBySource[source] = self.db.realm.altsBySource[source] or {}
-        self.db.realm.altsBySource[source][main] = 
-            self.db.realm.altsBySource[source][main] or {}
-        for i,v in ipairs(self.db.realm.altsBySource[source][main]) do
-            if v == alt then
-                return
-            end
-        end
-
-        tinsert(self.db.realm.altsBySource[source][main], alt)
-    
-        if MainsBySource then
-            MainsBySource[source] = MainsBySource[source] or {}
-            MainsBySource[source][alt] = main
-        end
-    
-    end
-end
-
-function Alts:SetAltEvent(event, main, alt, source)
-    self:SetAlt(main, alt, source)
-end
-
-function Alts:DeleteAltEvent(event, main, alt, source)
-    self:DeleteAlt(main, alt, source)
-end
-
-function Alts:RemoveSourceEvent(event, source)
-    self:RemoveSource(source)
-end
-
-function Alts:PushLibAltsData()
-    if useLibAlts == true then
-        for k, v in pairs(self.db.realm.alts) do
-            for i, alt in ipairs(self.db.realm.alts[k]) do
-                LibAlts:SetAlt(k, alt)
-            end
-        end
-        
-        for source, mains in pairs(self.db.realm.altsBySource) do
-            for main, alts in pairs(mains) do
-                for i, alt in ipairs(alts) do
-                    LibAlts:SetAlt(main, alt, source)
-                end 
-            end
-        end
-    end
 end
 
 function Alts:CheckAndUpdateFriends()
@@ -388,13 +265,13 @@ function Alts:GuildContrib()
 
     wipe(GuildXP.weekly.sorted)
     for name, xp in pairs(GuildXP.weekly.data) do
-        tinsert(GuildXP.weekly.sorted, {name, xp})
+        tinsert(GuildXP.weekly.sorted, {AltsDB:FormatUnitName(name, false), xp})
     end
     tsort(GuildXP.weekly.sorted, function(a,b) return a[2] > b[2] end)
 
     wipe(GuildXP.total.sorted)
     for name, xp in pairs(GuildXP.total.data) do
-        tinsert(GuildXP.total.sorted, {name, xp})
+        tinsert(GuildXP.total.sorted, {AltsDB:FormatUnitName(name, false), xp})
     end
     tsort(GuildXP.total.sorted, function(a,b) return a[2] > b[2] end)
 end
@@ -403,18 +280,22 @@ function Alts:UpdateGuild()
 	guildUpdateTimer = nil
     if not self.db.profile.autoGuildImport then return end
     
-    local guildName = _G.GetGuildInfo("player")
+	local realm = ""
+    local guildName, pRank, pRankNum, guildRealm = _G.GetGuildInfo("player")
+	if not guildRealm or guildRealm == "" then
+		-- The guild is local to this server
+		realm = playerRealmAbbr
+	else
+		realm = guildRealm
+	end
+
     local numMembers = _G.GetNumGuildMembers(true)
     
     if not guildName or numMembers == 0 then return end
 
     local source = LibAlts.GUILD_PREFIX..guildName
 
-    if useLibAlts == true then
-        LibAlts:RemoveSource(source)
-    else
-        self:RemoveSource(source)
-    end
+    AltsDB:RemoveSource(source)
     
     local guildMembers = {}
     local numAlts = 0
@@ -435,8 +316,7 @@ function Alts:UpdateGuild()
             local diff = (((years*365)+(months*30)+days)*24+hours)*60*60
             lastOnline = _G.time() - diff
         end
-
-        guildMembers[LibAlts:TitleCase(name)] = lastOnline
+        guildMembers[name] = lastOnline
     end
 
     -- Save the information if we're tracking the guild.
@@ -467,9 +347,9 @@ function Alts:UpdateGuild()
             for name, lastOnline in pairs(self.db.realm.guilds[guildName]) do
                 if guildMembers[name] == nil then
                     local nameWithMain = name
-                    local main = LibAlts:GetMain(name)
+                    local main = AltsDB:GetMain(name)
                     if main and #main > 0 then
-                        nameWithMain = nameWithMainFmt:format(name, main)
+                        nameWithMain = nameWithMainFmt:format(name, AltsDB:FormatUnitName(main, true))
                     end
                     if self.db.profile.reportGuildChanges == true then
                         self:Print(leaveFmt:format(nameWithMain))
@@ -491,8 +371,6 @@ function Alts:UpdateGuild()
             achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
         local years, months, days, hours = _G.GetGuildRosterLastOnline(i)
 
-        name = self:TitleCase(name)
-
         local main
         -- Look for the following patterns in public and officer notes:
         --   * <name>'s alt
@@ -502,12 +380,14 @@ function Alts:UpdateGuild()
         --   * AKA: <name>
         --   * (<name>)
         --   * ([name])
+		--   * ALT(<name)
         local altMatch1 = "(.-)'s? [Aa][Ll][Tt]"
         local altMatch2 = "[Aa][Ll][Tt]:%s*([%a\128-\255]+)"
         local altMatch3 = "[Aa][Ll][Tt] [Oo][Ff] ([%a\128-\255]+)"
         local altMatch4 = "[Aa][Kk][Aa]:%s*([%a\128-\255]+)"
         local altMatch5 = "^[(]([%a\128-\255]+)[)]"
         local altMatch6 = "^[%[]([%a\128-\255]+)[%]]"
+        local altMatch7 = "[Aa][Ll][Tt]([ ]*[%a\128-\255]+)[ ]*[)]"
 
         local funcs = {
             -- Check if the note format is "<name>'s alt"
@@ -534,6 +414,10 @@ function Alts:UpdateGuild()
             function(val)
                 return val:match(altMatch6)
             end,
+            -- Check if the note format is "Alt(<name>)"
+            function(val)
+                return val:match(altMatch7)
+            end,
             -- Check if the note is just a name
             function(val)
                 return val
@@ -543,22 +427,30 @@ function Alts:UpdateGuild()
         for i,v in ipairs(funcs) do
             local badRefFmt = L["Reference to a non-existent main %s for %s."]
 
-            main = self:TitleCase(v(officernote))
+            main = AltsDB:FormatUnitName(v(officernote))
             if main and #main > 0 then
                 if guildMembers[main] then 
                     break
-                elseif main ~= self:TitleCase(officernote) then
+				elseif not AltsDB:HasRealm(main) and 
+					guildMembers[AltsDB:FormatNameWithRealm(main,realm)] then
+					main = AltsDB:FormatNameWithRealm(main,realm)
+					break
+                elseif main ~= AltsDB:FormatUnitName(officernote) then
                     if self.db.profile.reportMissingMains then
                         self:Print(badRefFmt:format(main, name))
                     end
                 end
             end
             
-            main = self:TitleCase(v(publicnote))
+            main = AltsDB:FormatUnitName(v(publicnote))
             if main and #main > 0 then
                 if guildMembers[main] then
                     break
-                elseif main ~= self:TitleCase(publicnote) then
+				elseif not AltsDB:HasRealm(main) and 
+					guildMembers[AltsDB:FormatNameWithRealm(main,realm)] then
+					main = AltsDB:FormatNameWithRealm(main,realm)
+					break
+                elseif main ~= AltsDB:FormatUnitName(publicnote) then
                     if self.db.profile.reportMissingMains then
                         self:Print(badRefFmt:format(main, name))
                     end
@@ -570,272 +462,63 @@ function Alts:UpdateGuild()
         if main and #main > 0 then
             if guildMembers[main] then
                 -- If the main doesn't exist yet, then increase the counter
-                if not self:GetAltsForSource(main, source) then
+                if not AltsDB:GetAltsForSource(main, source) then
                     numMains = numMains + 1
                 end
                 -- Add the main-alt relationship for this guild
-                if useLibAlts == true then
-                    LibAlts:SetAlt(main, name, source)
-                else
-                    self:SetAlt(main, name, source)
-                end
+                AltsDB:SetAlt(main, name, source)
                 numAlts = numAlts + 1
             end
         end
     end
 
     -- Create the reverse lookup table
-    MainsBySource[source] = ReverseTable(self.db.realm.altsBySource[source])
+	AltsDB:UpdateMainsBySource(source)
 
     local importFormat = L["Imported the guild '%s'. Mains: %d, Alts: %d."]
     self:Print(importFormat:format(guildName, numMains, numAlts))
 end
 
---- Return a list of alts for a given name.
--- @name :GetAlt
--- @param main Name of the main character.
--- @return list List of alts for the main.
-function Alts:GetAlts(main)
-    if not main then return end
-    
-    main = self:TitleCase(main)
-
-    local alts = {}
-    
-    if self.db.realm.alts[main] and #self.db.realm.alts[main] > 0 then
-        for i,v in ipairs(self.db.realm.alts[main]) do
-            if not tContains(alts, v) then
-                tinsert(alts, v)
-            end
-        end
-    end
-
-    for k,v in pairs(self.db.realm.altsBySource) do
-        if self.db.realm.altsBySource[k][main] and #self.db.realm.altsBySource[k][main] > 0 then
-            for i,v in ipairs(self.db.realm.altsBySource[k][main]) do
-                if not tContains(alts, v) then
-                    tinsert(alts, v)
-                end
-            end
-        end
-    end
-
-    if alts and #alts > 0 then
-        return unpack(alts)
-    end
-
-    return nil
+function Alts:SetAltEvent(event, main, alt, source)
+    if main then self:UpdateMainsTable(main) end
 end
 
---- Return a list of alts for a given name for a given data source.
--- @name :GetAltsForSource
--- @param main Name of the main character.
--- @param source The data source to use.
--- @return list List of alts for the main.
-function Alts:GetAltsForSource(main, source)
-    if not main or #main == 0 or not source or #source == 0 then return nil end
-
-    main = self:TitleCase(main)
-    
-    if not source then
-    	if self.db.realm.alts[main] and #self.db.realm.alts[main] > 0 then
-    	    return unpack(self.db.realm.alts[main])
-    	end
-    else
-        if not self.db.realm.altsBySource[source] then return nil end
-
-        if self.db.realm.altsBySource[source][main] and
-            #self.db.realm.altsBySource[source][main] > 0 then
-            return unpack(self.db.realm.altsBySource[source][main])
-        end
-    end
-
-    return nil
+function Alts:DeleteAltEvent(event, main, alt, source)
+    if main then self:UpdateMainsTable(main) end
 end
 
---- Remove a main-alt relationship.
--- @name :DeleteAlt
--- @param main Name of the main character.
--- @param alt Name of the alt being removed.
--- @param source The data source to use.
-function Alts:DeleteAlt(main, alt, source)
-	main = self:TitleCase(main)
-	alt = self:TitleCase(alt)
-
-    if main then
-        self:UpdateMainsTable(main)
-    end
-
-    if not source then
-    	if not self.db.realm.alts[main] then return end
-
-    	for i = 1, #self.db.realm.alts[main] do
-    		if self.db.realm.alts[main][i] == alt then
-    			tremove(self.db.realm.alts[main], i)
-    		end
-    	end
-    	if #self.db.realm.alts[main] == 0 then
-    		self.db.realm.alts[main] = nil
-    	end
-	
-    	if Mains then
-    	    for i,v in ipairs(Mains) do
-    	        if v[1] == alt then
-    	            tremove(Mains, i)
-                end
-            end
-        end
-    else
-    	if not self.db.realm.altsBySource[source] then return end
-    	if not self.db.realm.altsBySource[source][main] then return end
-
-    	for i = 1, #self.db.realm.altsBySource[source][main] do
-    		if self.db.realm.altsBySource[source][main][i] == alt then
-    			tremove(self.db.realm.altsBySource[source][main], i)
-    		end
-    	end
-    	if #self.db.realm.altsBySource[source][main] == 0 then
-    		self.db.realm.altsBySource[source][main] = nil
-    	end
-	
-    	if MainsBySource and MainsBySource[source] then
-    	    for i,v in ipairs(MainsBySource[source]) do
-    	        if v[1] == alt then
-    	            tremove(MainsBySource[source], i)
-                end
-            end
-        end
-    end
-end
-
---- Get the main for a given alt character
--- @name :GetMain 
--- @param alt Name of the alt character.
--- @return string Name of the main character.
-function Alts:GetMain(alt)
-	if not alt or not Mains then return end
-
-	alt = self:TitleCase(alt)
-
-	local main = Mains[alt]
-	
-	if main then return main end
-	
-	if not MainsBySource then return nil end
-	
-	for k, v in pairs(MainsBySource) do
-	    main = MainsBySource[k][alt]
-	    if main then return main end
-    end
-end
-
---- Get all the mains in the database
--- @name :GetAllMains 
--- @return table Table of all main names.
-function Alts:GetAllMains()
-    for k, v in pairs(self.db.realm.alts) do
-        if not tContains(AllMains, k) then
-            tinsert(AllMains, k)
-        end
-    end
-
-	for k, v in pairs(self.db.realm.altsBySource) do
-	    for key,val in pairs(self.db.realm.altsBySource[k]) do
-	        if not tContains(AllMains, key) then
-	            tinsert(AllMains, key)
-	        end
-        end
-    end
-
-    return AllMains
-end
-
-function Alts:DeleteUserMain(main)
-    if not main then return end
-
-    local alts
-    if useLibAlts == true then
-        alts = { LibAlts:GetAltsForSource(main, nil) }
-    else
-        alts = { self:GetAltsForSource(main, nil) }
-    end
-    
-    if alts and #alts > 0 then
-        for i, alt in pairs(alts) do
-            if alt and #alt > 0 then
-                if useLibAlts then
-                    LibAlts:DeleteAlt(main, alt)
-                else
-                    self:DeleteAlt(main, alt)
-                end
-            end
-        end
-    end
+function Alts:RemoveSourceEvent(event, source)
+    self:UpdateMainsTable()
 end
 
 function Alts:UpdateMainsTable(main)
     local altList
     local alts
     if not main then
-        local allMains
-
-        if useLibAlts == true then
-            allMains = {}
-            LibAlts:GetAllMains(allMains)
-        else
-            allMains = self:GetAllMains()
-        end
-
+        local allMains = {}
+        AltsDB:GetAllMains(allMains)
         wipe(MainsTable)
-
-        for i,v in pairs(allMains) do
-            local name = self:TitleCase(v)
-            if useLibAlts == true then
---[[
-                alts = {LibAlts:GetAlts(name)}
-                for i, v in ipairs(alts) do
-                    if v and alts[i] then
-                        alts[i] = self:TitleCase(v)
-                    end
-                end
-                altList = tconcat(alts, ", ") or ""
-]]--
-                altList = strjoin(", ", LibAlts:GetAlts(name)) or ""
-            else
-                altList = strjoin(", ", self:GetAlts(name)) or ""
-            end
-            tinsert(MainsTable, {name, altList})
+        for i, name in pairs(allMains) do
+            altList = AltsDB:FormatUnitList(", ", true, AltsDB:GetAlts(name)) or ""
+			if MainsTable[main] then
+			else
+				tinsert(MainsTable, {AltsDB:FormatUnitName(name, true), altList, AltsDB:FormatUnitName(name, false)})
+			end
         end
-    else
-		local name
-        main = self:TitleCase(main)
-        for i, v in ipairs(MainsTable) do
-            if v then
-                name = v[1]
---                if self:TitleCase(name) == main then
-                if name == main then
-                    -- Remove the existing entry
-                    tremove(MainsTable, i)
-                    break
-                end
+	else
+        main = AltsDB:FormatUnitName(main, false)
+		local row
+		for i = #MainsTable, 1, -1 do
+			row = MainsTable[i]
+            if row and row[3] == main then
+                -- Remove the existing entry
+                tremove(MainsTable, i)
+                break
             end
         end
 
-        if useLibAlts == true then
---[[
-            alts = {LibAlts:GetAlts(main)}
-            for i, v in ipairs(alts) do
-                if v and alts[i] then
-                    alts[i] = self:TitleCase(v)
-                end
-            end
-            altList = tconcat(alts, ", ") or ""
-]]--
-            altList = strjoin(", ", LibAlts:GetAlts(main)) or ""
-        else
-            altList = strjoin(", ", self:GetAlts(main)) or ""
-        end
-        tinsert(MainsTable, {main, altList})
+        altList = AltsDB:FormatUnitList(", ", true, AltsDB:GetAlts(main)) or ""
+        tinsert(MainsTable, {AltsDB:FormatUnitName(main, true), altList, AltsDB:FormatUnitName(main, false)})
     end
 
     if altsFrame and altsFrame:IsVisible() then
@@ -1181,7 +864,15 @@ end
 function Alts:OnInitialize()
     -- Called when the addon is loaded
     self.db = LibStub("AceDB-3.0"):New("AltsDB", defaults, "Default")
-    Mains = ReverseTable(self.db.realm.alts)
+
+	AltsDB:OnInitialize(self)
+
+    -- Register callbacks for LibAlts
+	-- Occurs after the AltsDB registration of callbacks so it recieves
+	-- the calls after the data has been handled.
+    LibAlts.RegisterCallback(self, "LibAlts_SetAlt", "SetAltEvent")
+    LibAlts.RegisterCallback(self, "LibAlts_RemoveAlt", "DeleteAltEvent")
+    LibAlts.RegisterCallback(self, "LibAlts_RemoveSource", "RemoveSourceEvent")
 
     -- Register the options table
     local displayName = _G.GetAddOnMetadata(ADDON_NAME, "Title")
@@ -1201,21 +892,6 @@ function Alts:OnInitialize()
 	    displayName, L["Ignores"], displayName, "ignores")
 	ACD:AddToBlizOptions(
 	    displayName, options.args.profile.name, displayName, "profile")
-
-    -- Check that LibAlts is available and has the correct methods
-    if LibAlts and LibAlts.RegisterCallback and LibAlts.SetAlt and 
-        LibAlts.DeleteAlt and LibAlts.RemoveSource and LibAlts.GetAlts then
-        useLibAlts = true
-    end
-
-    if useLibAlts == true then
-        -- Push the data into LibAlts before registering callbacks
-        self:PushLibAltsData()
-        -- Register callbacks for LibAlts
-        LibAlts.RegisterCallback(self, "LibAlts_SetAlt", "SetAltEvent")
-        LibAlts.RegisterCallback(self, "LibAlts_RemoveAlt", "DeleteAltEvent")
-        LibAlts.RegisterCallback(self, "LibAlts_RemoveSource", "RemoveSourceEvent")
-    end
 
 	self:RegisterChatCommand("alts", "AltsHandler")
 	self:RegisterChatCommand("altsdebug", "AltsDebugHandler")
@@ -1266,27 +942,22 @@ function Alts:OnInitialize()
 	icon:Register("AltsLDB", altsLDB, self.db.profile.minimap)
 	
 	playerName = _G.UnitName("player")
+	playerRealm = _G.GetRealmName()
+	playerRealmAbbr = AltsDB:FormatRealmName(playerRealm)
 end
 
 function Alts:SetMainHandler(input)
 	if input and #input > 0 then
 		local alt, main = string.match(input, "^(%S+) *(.*)")
-		alt = self:TitleCase(alt)
 		if main and #main > 0 then
-    		main = self:TitleCase(main)
-
-            if useLibAlts == true then
-                LibAlts:SetAlt(main, alt)
-            else
-			    self:SetAlt(main, alt)
-		    end
+	    	AltsDB:SetAlt(main, alt)
 
 			if self.db.profile.verbose == true then
 				local strFormat = L["Set main for %s: %s"]
-				self:Print(strFormat:format(main, alt))
+				self:Print(strFormat:format(AltsDB:FormatUnitName(main), AltsDB:FormatUnitName(alt)))
 			end
 		else
-		    main = self:GetMain(alt)
+		    main = AltsDB:GetMain(alt)
 
             --self:StaticPopupSetMain(alt, main)
 		    setMainFrame.charname:SetText(alt)
@@ -1333,19 +1004,12 @@ end
 function Alts:DelAltHandler(input)
 	if input and #input > 0 then
 		local alt, main = string.match(input, "^(%S+) *(.*)")
-		alt = self:TitleCase(alt)
 		if main and #main > 0 then
-    		main = self:TitleCase(main)
-
-            if useLibAlts == true then
-                LibAlts:DeleteAlt(main, alt)
-            else
-			    self:DeleteAlt(main, alt)
-			end
+		    AltsDB:DeleteAlt(main, alt)
 
 			if self.db.profile.verbose == true then
 				local strFormat = L["Deleted alt %s for %s"]
-				self:Print(strFormat:format(alt, main))
+				self:Print(strFormat:format(AltsDB:FormatUnitName(alt), AltsDB:FormatUnitName(main)))
 			end
 		else
 			self:Print(L["Usage: /delalt <alt> <main>"])
@@ -1362,8 +1026,6 @@ function Alts:IsMainHandler(input)
 	if input and #input > 0 then
 		local name, source = string.match(input, "^(%S+) *(.*)")
         local isMain
-		name = self:TitleCase(name)
-
         local sourceUsed = ""
 		if source and #source > 0 then
             isMain = LibAlts:IsMainForSource(name, source)
@@ -1375,7 +1037,7 @@ function Alts:IsMainHandler(input)
         local result = ""
         if not isMain then result = "not " end
 
-        self:Print(outputFmt:format(name, result, sourceUsed))
+        self:Print(outputFmt:format(AltsDB:FormatUnitName(name), result, sourceUsed))
     else
         self:Print("Usage: /ismain name <source>")
     end
@@ -1388,8 +1050,6 @@ function Alts:IsAltHandler(input)
 	if input and #input > 0 then
 		local name, source = string.match(input, "^(%S+) *(.*)")
         local isAlt
-		name = self:TitleCase(name)
-
         local sourceUsed = ""
 		if source and #source > 0 then
             isAlt = LibAlts:IsAltForSource(name, source)
@@ -1401,7 +1061,7 @@ function Alts:IsAltHandler(input)
         local result = ""
         if not isAlt then result = "not " end
 
-        self:Print(outputFmt:format(name, result, sourceUsed))
+        self:Print(outputFmt:format(AltsDB:FormatUnitName(name), result, sourceUsed))
     else
         self:Print("Usage: /isalt name <source>")
     end
@@ -1429,14 +1089,13 @@ end
 
 function Alts:GetAltsHandler(input)
 	if input and #input > 0 then
-		local main = self:TitleCase(input)
-		local alts = { self:GetAlts(main) }
+		local main, alts = AltsDB:GetAltsForMain(input, true)
 		if alts and #alts > 0 then
-            local altList = strjoin(", ", unpack(alts))
+            local altList = AltsDB:FormatUnitList(", ", true, unpack(alts))
             local strFormat = L["Alts for %s: %s"]
-		    self:Print(strFormat:format(main, altList))
+		    self:Print(strFormat:format(AltsDB:FormatUnitName(main), altList))
 		else
-		    self:Print(L["No alts found for "]..main)
+		    self:Print(L["No alts found for "]..input)
 		end
 	else
 		self:Print(L["Usage: /getalts <main>"])
@@ -1445,18 +1104,13 @@ end
 
 function Alts:GetMainHandler(input)
 	if input and #input > 0 then
-		local alt = self:TitleCase(input)
-		local main
-		if useLibAlts then
-		    main = LibAlts:GetMain(alt)
-		else
-		    main = self:GetMain(alt)
-	    end
+		local main, altFound = AltsDB:GetMainForAlt(input)
+	
 		if main and #main > 0 then
             local strFormat = L["Main for %s: %s"]
-		    self:Print(strFormat:format(alt, main))
+		    self:Print(strFormat:format(AltsDB:FormatUnitName(altFound), AltsDB:FormatUnitName(main)))
 		else
-		    self:Print(L["No main found for "]..alt)
+		    self:Print(L["No main found for "]..input)
 		end
 	else
 		self:Print(L["Usage: /getmain <alt>"])
@@ -1465,10 +1119,8 @@ end
 
 function Alts:AddAltHandler(main)
 	if main and #main > 0 then
-		main = self:TitleCase(main)
-
         --self:StaticPopupSetMain(alt, main)
-	    addAltFrame.charname:SetText(main)
+	    addAltFrame.charname:SetText(AltsDB:FormatUnitName(main))
         --addAltFrame.editbox:SetText(main or "")
 	    addAltFrame:Show()
 	end
@@ -1778,7 +1430,7 @@ function Alts:CreateGuildContribExport(period)
     local line
     local buffer = {}
     for i, data in ipairs(table) do
-        local name = data[1]
+        local name = AltsDB:FormatUnitName(data[1], false)
         local xp = data[2]
         line = strFmt:format(name,xp)
         buffer[i] = line
@@ -1956,8 +1608,7 @@ function Alts:ShowContribFrame()
         end
         scroll:ResumeLayout()
         scroll:DoLayout()
-        local strFmt = "%s: %d"
-        frame:SetStatusText(strFmt:format(L["Total XP"], totalXP))
+        frame:SetStatusText(L["Total XP"]..": "..totalXP)
     end
     
     ContribsFrame.update("Total")
@@ -2009,8 +1660,9 @@ function Alts:CreateAddAltFrame()
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	addalt:SetBackdropColor(0,0,0,1)
-		
-	local editbox = _G.CreateFrame("EditBox", nil, addalt, "InputBoxTemplate")
+
+	local editbox = _G.CreateFrame("EditBox", nil, addalt, "AutoCompleteEditBoxTemplate")
+	editbox.autoCompleteParams = _G.AUTOCOMPLETE_LIST.ALL
 	editbox:SetFontObject(_G.ChatFontNormal)
 	editbox:SetWidth(300)
 	editbox:SetHeight(35)
@@ -2449,8 +2101,8 @@ function Alts:CreateAltsFrame()
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
 				local row = frame.table:GetRow(frame.table:GetSelection())
-				if row[1] and #row[1] > 0 then
-					confirmMainDeleteFrame.mainname:SetText(row[1])
+				if row[3] and #row[3] > 0 then
+					confirmMainDeleteFrame.mainname:SetText(row[3])
 					confirmMainDeleteFrame:Show()
 					confirmMainDeleteFrame:Raise()
 					altsFrame:Hide()
@@ -2468,9 +2120,9 @@ function Alts:CreateAltsFrame()
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
 				local row = frame.table:GetRow(frame.table:GetSelection())
-				if row[1] and #row[1] > 0 then
+				if row[3] and #row[3] > 0 then
 				    frame:Hide()
-					self:EditAltsHandler(row[1])
+					self:EditAltsHandler(row[3])
 				end
 			end
 		end)
@@ -2494,7 +2146,8 @@ function Alts:CreateAltsFrame()
 			local searchterm = searchterm:GetText()
 			if searchterm and #searchterm > 0 then
 				local term = searchterm:lower()
-				if row[1]:lower():find(term) or row[2]:lower():find(term) then
+				if row[1]:lower():find(term) or row[2]:lower():find(term) or
+					row[3]:lower():find(term) then
 					return true
 				end
 
@@ -2630,7 +2283,7 @@ function Alts:GenerateGuildExport()
             wipe(fields)
 			count = count + 1
             if self.db.profile.exportUseName == true then
-                tinsert(fields, tostring(name or ""))
+                tinsert(fields, tostring(AltsDB:FormatUnitName(name, false) or ""))
             end
             if self.db.profile.exportUseLevel == true then
                 tinsert(fields, tostring(level or ""))
@@ -2673,9 +2326,9 @@ function Alts:GenerateGuildExport()
             if self.db.profile.exportUseAlts == true then
                 local altsStr = ""
                 if self.db.profile.exportOnlyGuildAlts == true then
-                    altsStr = strjoin(delimiter, LibAlts:GetAltsForSource(name, source)) or ""
+                    altsStr = AltsDB:FormatUnitList(delimiter, false, LibAlts:GetAltsForSource(name, source)) or ""
                 else
-                    altsStr = strjoin(delimiter, LibAlts:GetAlts(name)) or ""
+                    altsStr = AltsDB:FormatUnitList(delimiter, false, LibAlts:GetAlts(name)) or ""
                 end
                 tinsert(fields, escapeField(altsStr or "",escapeChar))
             end
@@ -2724,7 +2377,7 @@ function Alts:CreateEditAltsFrame()
 	local cols = {}
 	cols[1] = {
 		["name"] = L["Alt Name"],
-		["width"] = 100,
+		["width"] = 180,
 		["align"] = "LEFT",
 		["color"] = {
 			["r"] = 1.0,
@@ -2771,9 +2424,9 @@ function Alts:CreateEditAltsFrame()
     	    local frame = this:GetParent()
     		if frame.table:GetSelection() then
     			local row = frame.table:GetRow(frame.table:GetSelection())
-    			if row[1] and #row[1] > 0 then
-    				confirmDeleteFrame.mainname:SetText(frame.charname:GetText())
-    				confirmDeleteFrame.altname:SetText(row[1])
+    			if row[2] and #row[2] > 0 then
+    				confirmDeleteFrame.mainname:SetText(AltsDB:FormatUnitName(frame.charname:GetText()))
+    				confirmDeleteFrame.altname:SetText(AltsDB:FormatUnitName(row[2], false))
     				confirmDeleteFrame:Show()
     				frame:Hide()
     			end
@@ -2828,8 +2481,10 @@ function Alts:CreateSetMainFrame()
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	setmain:SetBackdropColor(0,0,0,1)
-		
-	local editbox = _G.CreateFrame("EditBox", nil, setmain, "InputBoxTemplate")
+
+	local editbox = _G.CreateFrame("EditBox", nil, setmain, "AutoCompleteEditBoxTemplate")
+	editbox.autoCompleteParams = _G.AUTOCOMPLETE_LIST.ALL
+	--local editbox = _G.CreateFrame("EditBox", nil, setmain, "InputBoxTemplate")
 	editbox:SetFontObject(_G.ChatFontNormal)
 	editbox:SetWidth(300)
 	editbox:SetHeight(35)
@@ -2937,11 +2592,7 @@ function Alts:CreateConfirmDeleteFrame()
 	deletebutton:SetPoint("BOTTOM", deletewindow, "BOTTOM", -60, 20)
 	deletebutton:SetScript("OnClick",
 	    function(this)
-	        if useLibAlts == true then
-	            LibAlts:DeleteAlt(mainname:GetText(), altname:GetText())
-            else
-	            self:DeleteAlt(mainname:GetText(), altname:GetText())
-	        end
+            AltsDB:DeleteAlt(mainname:GetText(), altname:GetText())
 	        this:GetParent():Hide()
 	        self:EditAltsHandler(mainname:GetText())
 	    end)
@@ -3012,7 +2663,7 @@ function Alts:CreateConfirmMainDeleteFrame()
 	deletebutton:SetPoint("BOTTOM", deletewindow, "BOTTOM", -60, 20)
 	deletebutton:SetScript("OnClick",
 	    function(this)
-	        self:DeleteUserMain(mainname:GetText())
+	        AltsDB:DeleteUserMain(mainname:GetText())
 	        this:GetParent():Hide()
             self:UpdateMainsTable()
             altsFrame.table:SortData()
@@ -3053,20 +2704,15 @@ function Alts:EditAltsHandler(input)
 	local name = nil
 	local alts
 	if input and #input > 0 then
-		name = self:TitleCase(input)
-		
-		editAltsFrame.charname:SetText(name)
+		name = input
+		editAltsFrame.charname:SetText(AltsDB:FormatUnitName(name))
 
         wipe(EditAltsTable)
         
-        if useLibAlts == true then
-            alts = {LibAlts:GetAlts(name)}
-        else
-            alts = {self:GetAlts(name)}
-        end
+        alts = { AltsDB:GetAlts(name) }
 
         for i, v in ipairs(alts) do
-            tinsert(EditAltsTable, {v})
+            tinsert(EditAltsTable, {AltsDB:FormatUnitName(v, true), AltsDB:FormatUnitName(v, false)})
         end
 
         editAltsFrame.table:SortData()
@@ -3077,11 +2723,7 @@ end
 
 function Alts:SaveMainName(name, main)
 	if name and #name > 0 and main and #main > 0 then
-	    if useLibAlts == true then
-	        LibAlts:SetAlt(main, name)
-	    else
-		    self:SetAlt(main, name)
-		end
+	    AltsDB:SetAlt(main, name)
 	end
 
 	setMainFrame.charname:SetText("")
@@ -3090,11 +2732,7 @@ end
 
 function Alts:AddAltName(main, alt)
 	if main and #main > 0 and alt and #alt > 0 then
-	    if useLibAlts == true then
-	        LibAlts:SetAlt(main, alt)
-	    else
-		    self:SetAlt(main, alt)
-		end
+	    AltsDB:SetAlt(main, alt)
 	end
 
 	addAltFrame.charname:SetText("")
@@ -3103,11 +2741,7 @@ end
 
 function Alts:AddMainName(main, alt)
 	if main and #main > 0 and alt and #alt > 0 then
-	    if useLibAlts == true then
-	        LibAlts:SetAlt(main, alt)
-	    else
-		    self:SetAlt(main, alt)
-		end
+	    AltsDB:SetAlt(main, alt)
 	end
 
 	addMainFrame.mainname:SetText("")
@@ -3115,7 +2749,7 @@ function Alts:AddMainName(main, alt)
 end
 
 function Alts:OnEnable()
-    -- Called when the addon is enabled
+	AltsDB:OnEnable()
 
     -- Hook the game tooltip so we can add character Notes
     self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
@@ -3131,14 +2765,6 @@ function Alts:OnEnable()
 
     --self:RegisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
     --self:RegisterEvent("BN_FRIEND_TOON_ONLINE")
-
-    -- Build reverse lookup tables for other guilds.
-    for k,v in pairs(self.db.realm.altsBySource) do
-        local guildName = _G.GetGuildInfo("player")
-        if not (k == guildName and self.db.profile.autoGuildImport) then
-            MainsBySource[k] = ReverseTable(self.db.realm.altsBySource[k])
-        end
-    end
 
 	-- Register event and call roster to import guild members and alts
 	self:RegisterEvent("GUILD_ROSTER_UPDATE")
@@ -3273,17 +2899,17 @@ function Alts:OnTooltipSetUnit(tooltip, ...)
 
         -- Check if a single line should be displayed for mains and alts
         if self.db.profile.singleLineTooltipDisplay then
-            local main = self:GetMain(nameString)
+            local main = AltsDB:GetMainForAlt(nameString)
             if main and #main > 0 then
-                local alts = { self:GetAlts(main) }
+                local alts = { AltsDB:GetAlts(main) }
 
                 if alts and #alts > 0 then
-                    local altList = strjoin(", ", unpack(alts))
+                    local altList = AltsDB:FormatUnitList(", ", true, unpack(alts))
                     if altList and #altList > 0 then
                         if self.db.profile.wrapTooltip then
                             altList = wrap(altList,self.db.profile.wrapTooltipLength,"    ","", 4)
                         end
-            	        tooltip:AddLine(YELLOW..main..": "..WHITE..altList, 1, 1, 1, not self.db.profile.wrapTooltip)
+            	        tooltip:AddLine(YELLOW..AltsDB:FormatUnitName(main, true)..": "..WHITE..altList, 1, 1, 1, not self.db.profile.wrapTooltip)
                         return
             	    end
         	    end
@@ -3292,18 +2918,17 @@ function Alts:OnTooltipSetUnit(tooltip, ...)
 
         -- Check if it's a main
         if self.db.profile.showMainInTooltip then
-            local main = self:GetMain(nameString)
+            local main = AltsDB:GetMainForAlt(nameString)
             if main and #main > 0 then
-            	tooltip:AddLine(YELLOW..L["Main: "]..WHITE..main, 1, 1, 1, true)
+            	tooltip:AddLine(YELLOW..L["Main: "]..WHITE..AltsDB:FormatUnitName(main, true), 1, 1, 1, true)
             end
         end
 
         -- Check if it's an alt
         if self.db.profile.showAltsInTooltip then
-            local alts = { self:GetAlts(nameString) }
-
+			local main, alts = AltsDB:GetAltsForMain(nameString, true)
             if alts and #alts > 0 then
-                local altList = strjoin(", ", unpack(alts))
+                local altList = AltsDB:FormatUnitList(", ", true, unpack(alts))
                 if altList and #altList > 0 then
         			if self.db.profile.wrapTooltip then
         			    altList = wrap(altList,self.db.profile.wrapTooltipLength,"    ","", 4)
@@ -3316,23 +2941,19 @@ function Alts:OnTooltipSetUnit(tooltip, ...)
 end
 
 function Alts:DisplayMain(name)
-    name = self:TitleCase(name)
-
-	local main = self:GetMain(name)
-    --local alts = { self:GetAlts(name) }
-    --local altList = strjoin(", ", unpack(alts))
+	local main = AltsDB:GetMainForAlt(name)
 
     if self.db.profile.singleLineChatDisplay == true and main and #main > 0 then
-        local alts = { self:GetAlts(main) }
+        local mainFound, alts = AltsDB:GetAltsForMain(main, true)
         local altList
         local text
 
         for i, v in ipairs(alts) do
             text = v
             if v == name then
-                text = BLUE .. v .. WHITE
+                text = BLUE .. AltsDB:FormatUnitName(v, true) .. WHITE
             else
-                text = v
+                text = AltsDB:FormatUnitName(v, true)
             end
             
             if i == 1 then
@@ -3343,18 +2964,17 @@ function Alts:DisplayMain(name)
         end
 
         if altList and #altList > 0 then
-            self:Print(YELLOW..main..": "..WHITE..altList)
+            self:Print(YELLOW..AltsDB:FormatUnitName(mainFound, true)..": "..WHITE..altList)
         end
     else
-        local alts = { self:GetAlts(name) }
-        local altList = strjoin(", ", unpack(alts))
-
+        local mainFound, alts = AltsDB:GetAltsForMain(name, true)
+        local altList = AltsDB:FormatUnitList(", ", true, unpack(alts))
     	if main and #main > 0 then
-    		self:Print(YELLOW..name..": "..WHITE..main)
+    		self:Print(YELLOW..AltsDB:FormatUnitName(name, true)..": "..WHITE..AltsDB:FormatUnitName(main, true))
     	end
 
         if altList and #altList > 0 then
-            self:Print(YELLOW..name..": "..WHITE..altList)
+            self:Print(YELLOW..AltsDB:FormatUnitName(name, true)..": "..WHITE..altList)
         end
     end
 end
@@ -3432,20 +3052,6 @@ end
 
 function Alts:BN_FRIEND_TOON_ONLINE(event, message)
 
-end
-
-function formatCharName(name)
-    local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
-    if not name then
-        return ""
-    end
-    
-    -- Change the string up to a - to lower case.
-    -- Limiting it in case a server name is present in the name.
-    name = name:gsub("^([^%-]+)", string.lower)
-    -- Change the first character to uppercase accounting for multibyte characters.
-    name = name:gsub(MULTIBYTE_FIRST_CHAR, string.upper, 1)
-    return name
 end
 
 function wrap(str, limit, indent, indent1,offset)
