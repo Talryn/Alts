@@ -88,6 +88,7 @@ local defaults = {
 		reportRemovedFriends = true,
 		reportRemovedIgnores = true,
 		reportGuildChanges = true,
+		reportTo = "Chat",
 		menusToModify = {
 			["PLAYER"] = true, 
 			["PARTY"] = true, 
@@ -276,6 +277,10 @@ function Alts:GuildContrib()
     tsort(GuildXP.total.sorted, function(a,b) return a[2] > b[2] end)
 end
 
+function Alts:GetCurrentTimestamp()
+	return _G.date("%Y/%m/%d %H:%M")
+end
+
 function Alts:UpdateGuild()
 	guildUpdateTimer = nil
     if not self.db.profile.autoGuildImport then return end
@@ -325,6 +330,7 @@ function Alts:UpdateGuild()
         -- Before updating the saved guild info, check for the differences.
         self.db.realm.guilds[guildName] = self.db.realm.guilds[guildName] or {}
         self.db.realm.guildLog[guildName] = self.db.realm.guildLog[guildName] or {}
+		local updates = 0
 
         if next(self.db.realm.guilds[guildName]) then
 			if self.db.profile.debug then self:Print("Checking guild for updates...") end
@@ -334,11 +340,13 @@ function Alts:UpdateGuild()
             local joinLogFmt = "%s  %s "..L["GuildLog_JoinedGuild"]
             for name, lastOnline in pairs(guildMembers) do
                 if self.db.realm.guilds[guildName][name] == nil then
-                    if self.db.profile.reportGuildChanges == true then
+                    if self.db.profile.reportGuildChanges == true and 
+						self.db.profile.reportTo == "Chat" then
                         self:Print(joinFmt:format(name))
                     end
                     tinsert(self.db.realm.guildLog[guildName],
-                        joinLogFmt:format(_G.date("%Y/%m/%d %H:%M"), name))
+                        joinLogFmt:format(self:GetCurrentTimestamp(), name))
+					updates = updates + 1
                 end 
             end
 
@@ -349,15 +357,24 @@ function Alts:UpdateGuild()
                     local nameWithMain = name
                     local main = AltsDB:GetMain(name)
                     if main and #main > 0 then
-                        nameWithMain = nameWithMainFmt:format(name, AltsDB:FormatUnitName(main, true))
+                        nameWithMain = nameWithMainFmt:format(name, 
+							AltsDB:FormatUnitName(main, true))
                     end
-                    if self.db.profile.reportGuildChanges == true then
+                    if self.db.profile.reportGuildChanges == true and  
+						self.db.profile.reportTo == "Chat" then
                         self:Print(leaveFmt:format(nameWithMain))
                     end
                     tinsert(self.db.realm.guildLog[guildName],
-                        leaveLogFmt:format(_G.date("%Y/%m/%d %H:%M"), nameWithMain))
+                        leaveLogFmt:format(self:GetCurrentTimestamp(), 
+							nameWithMain))
+					updates = updates + 1
                 end 
             end
+			if self.db.profile.reportGuildChanges and 
+				self.db.profile.reportTo == "GuildLog" and updates > 0 
+				and not _G.UnitAffectingCombat("player") then
+				self:ShowGuildLogFrame()
+			end
         end
 
         -- Update the saved guild information
@@ -746,6 +763,22 @@ function Alts:GetOptions()
                             get = function(info) return self.db.profile.reportGuildChanges end,
                 			order = 110
                         },
+                	    reportTo = {
+                			order = 115,
+                            name = L["Report To"],
+                            desc = L["ReportTo_OptionDesc"],
+							type = "select",
+							values = {
+							    ["Chat"] = L["Chat"],
+							    ["GuildLog"] = L["Guild Log"]
+							},
+                            set = function(info, val)
+								 self.db.profile.reportTo = val 
+							end,
+                            get = function(info) 
+								return self.db.profile.reportTo
+							end,
+                        },
                         guildLogButton = {
                             name = L["Guild Log"],
                             desc = L["GuildLog_OptionDesc"],
@@ -864,6 +897,8 @@ end
 function Alts:OnInitialize()
     -- Called when the addon is loaded
     self.db = LibStub("AceDB-3.0"):New("AltsDB", defaults, "Default")
+
+	self.logonTime = self:GetCurrentTimestamp()
 
 	AltsDB:OnInitialize(self)
 
@@ -1178,10 +1213,20 @@ function Alts:ShowGuildLogFrame()
         scroll:ReleaseChildren()
         scroll:PauseLayout()
         local count = 0
+		local marked = false
         local entries = #self.db.realm.guildLog[guildName]
         for i = entries, 1, -1 do
             local text = self.db.realm.guildLog[guildName][i]
             if text then
+				if not marked and text:sub(1,16) < self.logonTime then
+					if i < entries then
+		                local separator = AGU:Create("Heading")
+						separator:SetText("")
+		                separator:SetFullWidth(true)
+		                scroll:AddChild(separator)
+					end
+					marked = true
+				end
                 local label = AGU:Create("Label")
                 label:SetText(text)
                 label:SetFullWidth(true)
