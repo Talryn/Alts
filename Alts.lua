@@ -96,6 +96,56 @@ local defaults = {
 			["FRIEND_OFFLINE"] = true, 
 			["RAID_PLAYER"] = true,
 		},
+		altMatching = {
+			methods = {
+			    [1] = {
+				    -- <name>
+					regex = "^[ ]*([%a\128-\255]+)[ ]*$",
+					enabled = true,
+				},
+			    [2] = {
+				    -- <name>'s alt
+					regex = "(.-)'s?[ ]+[Aa][Ll][Tt]",
+					enabled = true,
+				},
+			    [3] = {
+				    -- ALT: <name>
+					regex = "[Aa][Ll][Tt]:%s*([%a\128-\255]+)",
+					enabled = true,
+				},
+			    [4] = {
+				    -- Alt of <name>
+					regex = "[Aa][Ll][Tt][ ]+[Oo][Ff][ ]+([%a\128-\255]+)",
+					enabled = true,
+				},
+			    [5] = {
+				    -- AKA: <name>
+					regex = "[Aa][Kk][Aa]:%s*([%a\128-\255]+)",
+					enabled = true,
+				},
+			    [6] = {
+				    -- (<name>)
+					regex = "^[(][ ]*([%a\128-\255]+)[ ]*[)]",
+					enabled = true,
+				},
+			    [7] = {
+				    -- [<name>]
+					regex = "^[%[][ ]*([%a\128-\255]+)[ ]*[%]]",
+					enabled = true,
+				},
+			    [8] = {
+					-- ALT(<name>)
+					regex = "[Aa][Ll][Tt][(][ ]*([%a\128-\255]+)[ ]*[)]",
+					enabled = true,
+				},
+			    [9] = {
+					-- <name> alt
+					regex = "([%a\128-\255]+)[ ]+[Aa][Ll][Tt]",
+					enabled = true,
+				},
+			},
+			customMethods = {},
+		},
 	},
 	realm = {
 	    alts = {},
@@ -139,6 +189,8 @@ local GuildXP = {
         totalXP = 0
     }
 }
+
+Alts.matchFuncs = {}
 
 function Alts:HookChatFrames()
     for i = 1, _G.NUM_CHAT_WINDOWS do
@@ -281,6 +333,43 @@ function Alts:GetCurrentTimestamp()
 	return _G.date("%Y/%m/%d %H:%M")
 end
 
+function Alts:UpdateMatchMethods()
+	wipe(self.matchFuncs)
+
+	if not self.db.profile.altMatching then 
+		self:Print("Error: No alt matching rules found.")
+		return
+	end
+
+	if self.db.profile.altMatching.methods then
+		for i, v in ipairs(self.db.profile.altMatching.methods) do
+			if v.enabled and v.regex and _G.type(v.regex) == "string" then
+				local f = v.regex
+				tinsert(self.matchFuncs, 
+					function(val)
+				        return val:match(f)
+					end
+				)
+			end
+		end
+	else
+		self:Print("No pre-configured alt matching rules found.")
+	end
+
+	if self.db.profile.altMatching.customMethods then
+		for i, v in ipairs(self.db.profile.altMatching.customMethods) do
+			if v.enabled and v.regex and _G.type(v.regex) == "string" then
+				local f = v.regex
+				tinsert(self.matchFuncs, 
+					function(val)
+				        return val:match(f)
+					end
+				)
+			end
+		end
+	end
+end
+
 function Alts:UpdateGuild()
 	guildUpdateTimer = nil
     if not self.db.profile.autoGuildImport then return end
@@ -389,59 +478,7 @@ function Alts:UpdateGuild()
         local years, months, days, hours = _G.GetGuildRosterLastOnline(i)
 
         local main
-        -- Look for the following patterns in public and officer notes:
-        --   * <name>'s alt
-        --   * ALT: <name>
-        --   * Alt of <name>
-        --   * <name>
-        --   * AKA: <name>
-        --   * (<name>)
-        --   * ([name])
-		--   * ALT(<name)
-        local altMatch1 = "(.-)'s? [Aa][Ll][Tt]"
-        local altMatch2 = "[Aa][Ll][Tt]:%s*([%a\128-\255]+)"
-        local altMatch3 = "[Aa][Ll][Tt] [Oo][Ff] ([%a\128-\255]+)"
-        local altMatch4 = "[Aa][Kk][Aa]:%s*([%a\128-\255]+)"
-        local altMatch5 = "^[(]([%a\128-\255]+)[)]"
-        local altMatch6 = "^[%[]([%a\128-\255]+)[%]]"
-        local altMatch7 = "[Aa][Ll][Tt]([ ]*[%a\128-\255]+)[ ]*[)]"
-
-        local funcs = {
-            -- Check if the note format is "<name>'s alt"
-            function(val)
-                return val:match(altMatch1)
-            end,
-            -- Check if the note format is "ALT: <name>"
-            function(val)
-                return val:match(altMatch2)
-            end,
-            -- Check if the note format is "Alt of <name>"
-            function(val)
-                return val:match(altMatch3)
-            end,
-            -- Check if the note format is "AKA: <name>"
-            function(val)
-                return val:match(altMatch4)
-            end,
-            -- Check if the note format is "(<name>)"
-            function(val)
-                return val:match(altMatch5)
-            end,
-            -- Check if the note format is "([name])"
-            function(val)
-                return val:match(altMatch6)
-            end,
-            -- Check if the note format is "Alt(<name>)"
-            function(val)
-                return val:match(altMatch7)
-            end,
-            -- Check if the note is just a name
-            function(val)
-                return val
-            end,     
-        }
-
-        for i,v in ipairs(funcs) do
+        for i,v in ipairs(self.matchFuncs) do
             local badRefFmt = L["Reference to a non-existent main %s for %s."]
 
             main = AltsDB:FormatUnitName(v(officernote))
@@ -2795,6 +2832,8 @@ end
 
 function Alts:OnEnable()
 	AltsDB:OnEnable()
+
+	self:UpdateMatchMethods()
 
     -- Hook the game tooltip so we can add character Notes
     self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
