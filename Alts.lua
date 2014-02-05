@@ -96,6 +96,7 @@ local defaults = {
 			["FRIEND_OFFLINE"] = true, 
 			["RAID_PLAYER"] = true,
 		},
+		-- Rules and config for matching alts
 		altMatching = {
 			methods = {
 			    [1] = {
