@@ -480,37 +480,42 @@ function Alts:UpdateGuild()
 
         local main
         for i,v in ipairs(self.matchFuncs) do
+			main = nil
             local badRefFmt = L["Reference to a non-existent main %s for %s."]
 
-            main = AltsDB:FormatUnitName(v(officernote))
-            if main and #main > 0 then
-                if guildMembers[main] then 
-                    break
-				elseif not AltsDB:HasRealm(main) and 
-					guildMembers[AltsDB:FormatNameWithRealm(main,realm)] then
-					main = AltsDB:FormatNameWithRealm(main,realm)
-					break
-                elseif main ~= AltsDB:FormatUnitName(officernote) then
-                    if self.db.profile.reportMissingMains then
-                        self:Print(badRefFmt:format(main, name))
-                    end
-                end
-            end
-            
-            main = AltsDB:FormatUnitName(v(publicnote))
-            if main and #main > 0 then
-                if guildMembers[main] then
-                    break
-				elseif not AltsDB:HasRealm(main) and 
-					guildMembers[AltsDB:FormatNameWithRealm(main,realm)] then
-					main = AltsDB:FormatNameWithRealm(main,realm)
-					break
-                elseif main ~= AltsDB:FormatUnitName(publicnote) then
-                    if self.db.profile.reportMissingMains then
-                        self:Print(badRefFmt:format(main, name))
-                    end
-                end
-            end
+			if officernote and #officernote > 0 then
+	            main = AltsDB:FormatUnitName(v(officernote))
+	            if main and #main > 0 then
+	                if guildMembers[main] then 
+	                    break
+					elseif not AltsDB:HasRealm(main) and 
+						guildMembers[AltsDB:FormatNameWithRealm(main,realm)] then
+						main = AltsDB:FormatNameWithRealm(main,realm)
+						break
+	                elseif main ~= AltsDB:FormatUnitName(officernote) then
+	                    if self.db.profile.reportMissingMains then
+	                        self:Print(badRefFmt:format(main, name))
+	                    end
+	                end
+	            end
+			end
+
+			if publicnote and #publicnote > 0 then
+	            main = AltsDB:FormatUnitName(v(publicnote))
+	            if main and #main > 0 then
+	                if guildMembers[main] then
+	                    break
+					elseif not AltsDB:HasRealm(main) and 
+						guildMembers[AltsDB:FormatNameWithRealm(main,realm)] then
+						main = AltsDB:FormatNameWithRealm(main,realm)
+						break
+	                elseif main ~= AltsDB:FormatUnitName(publicnote) then
+	                    if self.db.profile.reportMissingMains then
+	                        self:Print(badRefFmt:format(main, name))
+	                    end
+	                end
+	            end
+			end
         end
         
         -- Check if we found a valid alt name
