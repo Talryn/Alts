@@ -1807,7 +1807,7 @@ function Alts:CreateAddAltFrame()
 	addalt.charname = charname
 	addalt.editbox = editbox
 
-    addalt:SetMovable()
+    addalt:SetMovable(true)
     addalt:RegisterForDrag("LeftButton")
     addalt:SetScript("OnDragStart",
         function(this,button)
@@ -1931,7 +1931,7 @@ function Alts:CreateAddMainFrame()
 	addmain.mainname = mainname
 	addmain.altname = altname
 
-    addmain:SetMovable()
+    addmain:SetMovable(true)
     addmain:RegisterForDrag("LeftButton")
     addmain:SetScript("OnDragStart",
         function(this,button)
@@ -2038,7 +2038,7 @@ function Alts:CreateContribFrame()
 
     window.lock = self.db.profile.lock_contrib_window
 
-    window:SetMovable()
+    window:SetMovable(true)
     window:RegisterForDrag("LeftButton")
     window:SetScript("OnDragStart",
         function(self,button)
@@ -2248,7 +2248,7 @@ function Alts:CreateAltsFrame()
 
     altswindow.lock = self.db.profile.lock_main_window
 
-    altswindow:SetMovable()
+    altswindow:SetMovable(true)
     altswindow:RegisterForDrag("LeftButton")
     altswindow:SetScript("OnDragStart",
         function(self,button)
@@ -2540,7 +2540,7 @@ function Alts:CreateEditAltsFrame()
 	table:EnableSelection(true)
 	table:SetData(EditAltsTable, true)
 
-    editaltswindow:SetMovable()
+    editaltswindow:SetMovable(true)
     editaltswindow:RegisterForDrag("LeftButton")
     editaltswindow:SetScript("OnDragStart",
         function(this,button)
@@ -2621,7 +2621,7 @@ function Alts:CreateSetMainFrame()
 	setmain.charname = charname
 	setmain.editbox = editbox
 
-    setmain:SetMovable()
+    setmain:SetMovable(true)
     setmain:RegisterForDrag("LeftButton")
     setmain:SetScript("OnDragStart",
         function(this,button)
@@ -2699,7 +2699,7 @@ function Alts:CreateConfirmDeleteFrame()
 	deletewindow.mainname = mainname
     deletewindow.altname = altname
 
-    deletewindow:SetMovable()
+    deletewindow:SetMovable(true)
     deletewindow:RegisterForDrag("LeftButton")
     deletewindow:SetScript("OnDragStart",
         function(this,button)
@@ -2771,7 +2771,7 @@ function Alts:CreateConfirmMainDeleteFrame()
 
 	deletewindow.mainname = mainname
 
-    deletewindow:SetMovable()
+    deletewindow:SetMovable(true)
     deletewindow:RegisterForDrag("LeftButton")
     deletewindow:SetScript("OnDragStart",
         function(this,button)
