@@ -102,47 +102,56 @@ local defaults = {
 			    [1] = {
 				    -- <name>
 					regex = "^[ ]*([%a\128-\255]+)[ ]*$",
+					description = "<name>",
 					enabled = true,
 				},
 			    [2] = {
 				    -- <name>'s alt
 					regex = "(.-)'s?[ ]+[Aa][Ll][Tt]",
+					description = "<name>'s alt",
 					enabled = true,
 				},
 			    [3] = {
 				    -- ALT: <name>
 					regex = "[Aa][Ll][Tt]:%s*([%a\128-\255]+)",
+					description = "ALT: <name>",
 					enabled = true,
 				},
 			    [4] = {
 				    -- Alt of <name>
 					regex = "[Aa][Ll][Tt][ ]+[Oo][Ff][ ]+([%a\128-\255]+)",
+					description = "Alt of <name>",
 					enabled = true,
 				},
 			    [5] = {
 				    -- AKA: <name>
 					regex = "[Aa][Kk][Aa]:%s*([%a\128-\255]+)",
+					description = "AKA: <name>",
 					enabled = true,
 				},
 			    [6] = {
-				    -- (<name>)
-					regex = "^[(][ ]*([%a\128-\255]+)[ ]*[)]",
+				    -- [<name>] or (<name>)
+					regex = "^[%[(][ ]*([%a\128-\255]+)[ ]*[)%]]",
+					description = "[<name>] or (<name>)",
 					enabled = true,
 				},
 			    [7] = {
-				    -- [<name>]
-					regex = "^[%[][ ]*([%a\128-\255]+)[ ]*[%]]",
+					-- ALT(<name>)
+					regex = "[Aa][Ll][Tt][(][ ]*([%a\128-\255]+)[ ]*[)]",
+					description = "ALT(<name>)",
 					enabled = true,
 				},
 			    [8] = {
-					-- ALT(<name>)
-					regex = "[Aa][Ll][Tt][(][ ]*([%a\128-\255]+)[ ]*[)]",
+					-- <name> alt
+					regex = "([%a\128-\255]+)[ ]+[Aa][Ll][Tt]",
+					description = "<name> alt",
 					enabled = true,
 				},
 			    [9] = {
-					-- <name> alt
-					regex = "([%a\128-\255]+)[ ]+[Aa][Ll][Tt]",
-					enabled = true,
+					-- =<name>
+					regex = "^[= ]+([%a\128-\255]+)",
+					description = "=<name>",
+					enabled = false,
 				},
 			},
 			customMethods = {},
@@ -912,8 +921,45 @@ function Alts:GetOptions()
                         },
             		},
         		},
-            }
+            formats = {
+				    	order = 6,
+							name = L["Note Formats"],
+							type = "group",
+							args = {
+		          	desc = {
+		            	order = 1,
+		            	type = "description",
+		            	name = L["NoteFormats_Desc"],
+		          	},
+		          	hdr = {
+		            	order = 2,
+		            	type = "header",
+		            	name = L["Note Formats"],
+		          	},
+		        	},
+		    		},
+          }
         }
+
+				if self.db.profile.altMatching.methods then
+					for i, v in ipairs(self.db.profile.altMatching.methods) do
+		      	options.args.formats.args["regex"..tostring(i)] = {
+		        	order = 100 + i,
+		        	name = v.description,
+		          desc = v.description,
+		          type = "toggle",
+		          width = "double",
+		          set = function(info, val) 
+								self.db.profile.altMatching.methods[i].enabled = val
+								self:UpdateMatchMethods()
+							end,
+		          get = function(info) 
+								return self.db.profile.altMatching.methods[i].enabled
+							end,
+		        }
+					end
+				end
+
 	    options.args.profile = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
     end
 
@@ -968,6 +1014,8 @@ function Alts:OnInitialize()
 	    displayName, L["Friends"], displayName, "friends")
 	self.optionsFrame.Guild = ACD:AddToBlizOptions(
 	    displayName, L["Ignores"], displayName, "ignores")
+	self.optionsFrame.Formats = ACD:AddToBlizOptions(
+	    displayName, L["Note Formats"], displayName, "formats")
 	ACD:AddToBlizOptions(
 	    displayName, options.args.profile.name, displayName, "profile")
 
