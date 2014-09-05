@@ -657,11 +657,6 @@ function Alts:GetOptions()
 							type = "toggle",
 							set = function(info,val)
 								self.db.profile.addMenuItems = val
-								if val then
-									self:AddToUnitPopupMenu()
-								else
-									self:RemoveFromUnitPopupMenu()
-								end
 							end,
 							get = function(info)
 								return not self.db.profile.addMenuItems
@@ -2984,7 +2979,9 @@ function Alts:OnEnable()
 	confirmMainDeleteFrame = self:CreateConfirmMainDeleteFrame()
 
 	-- Add the Set Main menu item on unit frames
-	self:AddToUnitPopupMenu()
+	if self.db.profile.addMenuItems then
+		self:AddToUnitPopupMenu()
+	end
 
 	-- Hook chat frames so we can edit the messages
 	if self.db.profile.showMainsInChat then
