@@ -659,7 +659,7 @@ function Alts:GetOptions()
 								self.db.profile.addMenuItems = val
 							end,
 							get = function(info)
-								return not self.db.profile.addMenuItems
+								return self.db.profile.addMenuItems
 							end,
 							order = 11
 						},
