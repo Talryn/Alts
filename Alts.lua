@@ -6,10 +6,10 @@ local pairs = _G.pairs
 local ipairs = _G.ipairs
 local LibStub = _G.LibStub
 
-local ADDON_NAME, AddonData = ...
+local ADDON_NAME, addon = ...
 
 local Alts = LibStub("AceAddon-3.0"):NewAddon("Alts", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
-local AltsDB = AddonData.AltsDB
+local AltsDB = addon.AltsDB
 local AGU = LibStub("AceGUI-3.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("Alts", true)
 local LibDeformat = LibStub("LibDeformat-3.0")
@@ -18,7 +18,23 @@ local icon = LibStub("LibDBIcon-1.0")
 local LibAlts = LibStub("LibAlts-1.0")
 local ScrollingTable = LibStub("ScrollingTable")
 
-local ADDON_VERSION = "@project-version@"
+-- Try to remove the Git hash at the end, otherwise return the passed in value.
+local function cleanupVersion(version)
+	local iter = string.gmatch(version, "(.*)-[a-z0-9]+$")
+	if iter then
+		local ver = iter()
+		if ver and #ver >= 3 then
+			return ver
+		end
+	end
+	return version
+end
+
+addon.addonTitle = _G.GetAddOnMetadata(ADDON_NAME,"Title")
+addon.addonVersion = cleanupVersion("@project-version@")
+addon.CURRENT_BUILD, addon.CURRENT_INTERNAL, 
+    addon.CURRENT_BUILD_DATE, addon.CURRENT_UI_VERSION = _G.GetBuildInfo()
+addon.WoD = addon.CURRENT_UI_VERSION >= 60000
 
 local DEBUG = false
 
@@ -55,11 +71,11 @@ local defaults = {
 		autoGuildImport = true,
 		showMainInTooltip = true,
 		showAltsInTooltip = true,
-        showInfoOnLogon = true,
-        showInfoOnWho = true,
-        showMainsInChat = true,
-        singleLineChatDisplay = true,
-        singleLineTooltipDisplay = true,
+		showInfoOnLogon = true,
+		showInfoOnWho = true,
+		showMainsInChat = true,
+		singleLineChatDisplay = true,
+		singleLineTooltipDisplay = true,
 		wrapTooltip = true,
 		wrapTooltipLength = 50,
 		reportMissingMains = false,
@@ -71,6 +87,7 @@ local defaults = {
 		contrib_window_x = 0,
 		contrib_window_y = 0,
 		saveGuild = true,
+		addMenuItems = true,
 		exportUseName = true,
 		exportUseRank = true,
 		exportUseLevel = true,
@@ -316,7 +333,11 @@ function Alts:GuildContrib()
             lastOnline = _G.time() - diff
         end
 
-        local weeklyXP, totalXP, weeklyRank, totalRank = _G.GetGuildRosterContribution(i)
+        local weeklyXP, totalXP, weeklyRank, totalRank = 0, 0, 0, 0
+				if not addon.WoD then
+					weeklyXP, totalXP, weeklyRank, totalRank =
+					 	_G.GetGuildRosterContribution(i)
+				end
 
         local main = (LibAlts:GetMainForSource(name, source) or name)
 
@@ -596,112 +617,129 @@ function Alts:UpdateMainsTable(main)
 end
 
 function Alts:GetOptions()
-    if not options then
-        options = {
-            name = ADDON_NAME,
-            type = 'group',
-            args = {
-                core = {
-				    order = 1,
+	if not options then
+		options = {
+			name = ADDON_NAME,
+			type = 'group',
+			args = {
+				core = {
+					order = 1,
 					name = L["General Options"],
 					type = "group",
 					args = {
-                		displayheader = {
-                			order = 0,
-                			type = "header",
-                			name = L["General Options"],
-                		},
-                	    minimap = {
-                            name = L["Minimap Button"],
-                            desc = L["Toggle the minimap button"],
-                            type = "toggle",
-                            set = function(info,val)
-                                	-- Reverse the value since the stored value is to hide it
-                                    self.db.profile.minimap.hide = not val
-                                	if self.db.profile.minimap.hide then
-                                		icon:Hide("AltsLDB")
-                                	else
-                                		icon:Show("AltsLDB")
-                                	end
-                                  end,
-                            get = function(info)
-                        	        -- Reverse the value since the stored value is to hide it
-                                    return not self.db.profile.minimap.hide
-                                  end,
-                			order = 10
-                        },
-                	    disableInCombat = {
-                            name = L["Disable in Combat"],
-                            desc = L["DisableInCombat_OptionDesc"],
-                            type = "toggle",
-                            set = function(info, val)
-                                    self.db.profile.disableInCombat = val
-                                end,
-                            get = function(info)
-                                    return self.db.profile.disableInCombat
-                                end,
-                			order = 12
-                        },
-                	    verbose = {
-                            name = L["Verbose"],
-                            desc = L["Toggles the display of informational messages"],
-                            type = "toggle",
-                            set = function(info, val) self.db.profile.verbose = val end,
-                            get = function(info) return self.db.profile.verbose end,
-                			order = 15
-                        },
-                		headerMainWindow = {
-                			order = 200,
-                			type = "header",
-                			name = L["Main Window"],
-                		},
-                        lock_main_window = {
-                            name = L["Lock"],
-                            desc = L["Lock_OptionDesc"],
-                            type = "toggle",
-                            set = function(info,val)
-                                self.db.profile.lock_main_window = val
-                                altsFrame.lock = val
-                            end,
-                            get = function(info) return self.db.profile.lock_main_window end,
-                			order = 210
-                        },
-                        remember_main_pos = {
-                            name = L["Remember Position"],
-                            desc = L["RememberPosition_OptionDesc"],
-                            type = "toggle",
-                            set = function(info,val) self.db.profile.remember_main_pos = val end,
-                            get = function(info) return self.db.profile.remember_main_pos end,
-                			order = 220
-                        },
-                		displayheaderTooltip = {
-                			order = 300,
-                			type = "header",
-                			name = L["Tooltip Options"],
-                		},
-                        wrapTooltip = {
-                            name = L["Wrap Tooltips"],
-                            desc = L["Wrap notes in tooltips"],
-                            type = "toggle",
-                            set = function(info,val) self.db.profile.wrapTooltip = val end,
-                            get = function(info) return self.db.profile.wrapTooltip end,
-                			order = 310
-                        },
-                        wrapTooltipLength = {
-                            name = L["Tooltip Wrap Length"],
-                            desc = L["Maximum line length for a tooltip"],
-                            type = "range",
-                			min = 20,
-                			max = 80,
-                			step = 1,
-                            set = function(info,val) self.db.profile.wrapTooltipLength = val end,
-                            get = function(info) return self.db.profile.wrapTooltipLength end,
-                			order = 320
-                        },
-                    },
-                },
-                notes = {
-				    order = 2,
+						displayheader = {
+							order = 0,
+							type = "header",
+							name = L["General Options"],
+						},
+						minimap = {
+							name = L["Minimap Button"],
+							desc = L["Toggle the minimap button"],
+							type = "toggle",
+							set = function(info,val)
+								-- Reverse the value since the stored value is to hide it
+								self.db.profile.minimap.hide = not val
+								if self.db.profile.minimap.hide then
+									icon:Hide("AltsLDB")
+								else
+									icon:Show("AltsLDB")
+								end
+							end,
+							get = function(info)
+								-- Reverse the value since the stored value is to hide it
+								return not self.db.profile.minimap.hide
+							end,
+							order = 10
+						},
+						addMenuItems = {
+							name = L["Add Menu Items"],
+							desc = L["AddMenuItems_Desc"],
+							type = "toggle",
+							set = function(info,val)
+								self.db.profile.addMenuItems = val
+								if val then
+									self:AddToUnitPopupMenu()
+								else
+									self:RemoveFromUnitPopupMenu()
+								end
+							end,
+							get = function(info)
+								return not self.db.profile.addMenuItems
+							end,
+							order = 11
+						},
+						disableInCombat = {
+							name = L["Disable in Combat"],
+							desc = L["DisableInCombat_OptionDesc"],
+							type = "toggle",
+							set = function(info, val)
+								self.db.profile.disableInCombat = val
+							end,
+							get = function(info)
+								return self.db.profile.disableInCombat
+							end,
+							order = 12
+						},
+						verbose = {
+							name = L["Verbose"],
+							desc = L["Toggles the display of informational messages"],
+							type = "toggle",
+							set = function(info, val) self.db.profile.verbose = val end,
+							get = function(info) return self.db.profile.verbose end,
+							order = 15
+						},
+						headerMainWindow = {
+							order = 200,
+							type = "header",
+							name = L["Main Window"],
+						},
+						lock_main_window = {
+							name = L["Lock"],
+							desc = L["Lock_OptionDesc"],
+							type = "toggle",
+							set = function(info,val)
+								self.db.profile.lock_main_window = val
+								altsFrame.lock = val
+							end,
+							get = function(info) return self.db.profile.lock_main_window end,
+							order = 210
+ 						},
+						remember_main_pos = {
+							name = L["Remember Position"],
+							desc = L["RememberPosition_OptionDesc"],
+							type = "toggle",
+							set = function(info,val) self.db.profile.remember_main_pos = val end,
+							get = function(info) return self.db.profile.remember_main_pos end,
+							order = 220
+						},
+						displayheaderTooltip = {
+							order = 300,
+							type = "header",
+							name = L["Tooltip Options"],
+						},
+						wrapTooltip = {
+							name = L["Wrap Tooltips"],
+							desc = L["Wrap notes in tooltips"],
+							type = "toggle",
+							set = function(info,val) self.db.profile.wrapTooltip = val end,
+							get = function(info) return self.db.profile.wrapTooltip end,
+							order = 310
+						},
+						wrapTooltipLength = {
+							name = L["Tooltip Wrap Length"],
+							desc = L["Maximum line length for a tooltip"],
+							type = "range",
+							min = 20,
+							max = 80,
+							step = 1,
+							set = function(info,val) self.db.profile.wrapTooltipLength = val end,
+							get = function(info) return self.db.profile.wrapTooltipLength end,
+							order = 320
+						},
+					},
+				},
+				notes = {
+					order = 2,
 					name = L["Notes"],
 					type = "group",
 					args = {
@@ -1057,7 +1095,7 @@ function Alts:OnInitialize()
 		end,
 		OnTooltipShow = function(tooltip)
 			if tooltip and tooltip.AddLine then
-				tooltip:AddLine(GREEN .. L["Alts"].." "..ADDON_VERSION)
+				tooltip:AddLine(GREEN .. L["Alts"].." "..addon.addonVersion)
 				tooltip:AddLine(YELLOW .. L["Left click"] .. " " .. WHITE
 					.. L["to open/close the window"])
 				tooltip:AddLine(YELLOW .. L["Right click"] .. " " .. WHITE
@@ -2404,7 +2442,11 @@ function Alts:GenerateGuildExport()
         local name, rank, rankIndex, level, class, zone, publicnote,  
             officernote, online, status, classFileName, achPts, 
             achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
-        local weeklyXP, totalXP, weeklyRank, totalRank = _G.GetGuildRosterContribution(i)
+        local weeklyXP, totalXP, weeklyRank, totalRank = 0, 0, 0, 0
+				if not addon.WoD then
+					weeklyXP, totalXP, weeklyRank, totalRank =
+					 	_G.GetGuildRosterContribution(i)
+				end
 
         exportChar = true
 
@@ -2889,39 +2931,39 @@ function Alts:OnEnable()
 
 	self:UpdateMatchMethods()
 
-    -- Hook the game tooltip so we can add character Notes
-    self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
+	-- Hook the game tooltip so we can add character Notes
+	self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
 
 	-- Hook the friends frame tooltip
 	--self:HookScript("FriendsFrameTooltip_Show")
 
 	-- Register to receive the chat messages to watch for logons and who requests
 	self:RegisterEvent("CHAT_MSG_SYSTEM")
-    -- Watch for combat start and end events.
+	-- Watch for combat start and end events.
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
 	self:RegisterEvent("PLAYER_REGEN_DISABLED")
 
-    --self:RegisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
-    --self:RegisterEvent("BN_FRIEND_TOON_ONLINE")
+	--self:RegisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
+	--self:RegisterEvent("BN_FRIEND_TOON_ONLINE")
 
 	-- Register event and call roster to import guild members and alts
 	self:RegisterEvent("GUILD_ROSTER_UPDATE")
-    _G.GuildRoster()
+	_G.GuildRoster()
 
 	-- Register event to update friends data.
 	self:RegisterEvent("FRIENDLIST_UPDATE")
 	self:RegisterEvent("IGNORELIST_UPDATE")
 	-- Call ShowFriends to get the friend and ignore data updated.
-    _G.ShowFriends()
+	_G.ShowFriends()
 
-    -- Populate the MainsTable
-    self:UpdateMainsTable()
+	-- Populate the MainsTable
+	self:UpdateMainsTable()
 
 	-- Create the Alts frame for later use
-    altsFrame = self:CreateAltsFrame()
+	altsFrame = self:CreateAltsFrame()
 
 	-- Create the Contributions frame for later use
-    contribFrame = self:CreateContribFrame()
+	contribFrame = self:CreateContribFrame()
 	
 	-- Create the Set Main frame to use later
 	setMainFrame = self:CreateSetMainFrame()
@@ -2941,13 +2983,13 @@ function Alts:OnEnable()
 	-- Create the Confirm Delete Alt frame for later use
 	confirmMainDeleteFrame = self:CreateConfirmMainDeleteFrame()
 
-	-- Add the Edit Note menu item on unit frames
+	-- Add the Set Main menu item on unit frames
 	self:AddToUnitPopupMenu()
 
-    -- Hook chat frames so we can edit the messages
-    if self.db.profile.showMainsInChat then
-        self:HookChatFrames()
-    end
+	-- Hook chat frames so we can edit the messages
+	if self.db.profile.showMainsInChat then
+		self:HookChatFrames()
+	end
 end
 
 function Alts:OnDisable()
@@ -2960,8 +3002,8 @@ function Alts:OnDisable()
 end
 
 function Alts:AddToUnitPopupMenu()
+	if not self.db.profile.addMenuItems then return end
 	_G.UnitPopupButtons["ALTS_SET_MAIN"] = {text = L["Set Main"], dist = 0}
-
 	for menu, enabled in pairs(self.db.profile.menusToModify) do
 		if menu and enabled then
 			tinsert(_G.UnitPopupMenus[menu], 
@@ -2969,13 +3011,11 @@ function Alts:AddToUnitPopupMenu()
 				"ALTS_SET_MAIN")
 		end
 	end
-
 	self:SecureHook("UnitPopup_ShowMenu")
 end
 
 function Alts:RemoveFromUnitPopupMenu()
 	self:Unhook("UnitPopup_ShowMenu")
-
 	for menu in pairs(_G.UnitPopupMenus) do
 		for i = #_G.UnitPopupMenus[menu], 1, -1 do
 			if _G.UnitPopupMenus[menu][i] == "ALTS_SET_MAIN" then
@@ -2984,7 +3024,6 @@ function Alts:RemoveFromUnitPopupMenu()
 			end
 		end
 	end
-
 	_G.UnitPopupButtons["ALTS_SET_MAIN"] = nil
 end
 

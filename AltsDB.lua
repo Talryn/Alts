@@ -1,8 +1,8 @@
 local _G = getfenv(0)
-local ADDON_NAME, AddonData = ...
+local ADDON_NAME, addon = ...
 
 local AltsDB = {}
-AddonData.AltsDB = AltsDB
+addon.AltsDB = AltsDB
 
 -- Use local versions of standard LUA items for performance
 local string = _G.string
