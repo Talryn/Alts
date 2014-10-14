@@ -83,9 +83,6 @@ local defaults = {
 		remember_main_pos = true,
 		main_window_x = 0,
 		main_window_y = 0,
-		remember_contrib_pos = true,
-		contrib_window_x = 0,
-		contrib_window_y = 0,
 		saveGuild = true,
 		addMenuItems = true,
 		exportUseName = true,
@@ -96,8 +93,6 @@ local defaults = {
 		exportUseOfficerNote = true,
 		exportUseLastOnline = true,
 		exportUseAchvPoints = true,
-		exportUseWeeklyXP = true,
-		exportUseTotalXP = true,
 		exportUseAlts = true,
 		exportEscape = true,
 		exportOnlyMains = true,
@@ -195,7 +190,6 @@ local playerRealm = ""
 local playerRealmAbbr = ""
 local altsLDB = nil
 local altsFrame = nil
-local contribFrame = nil
 local setMainFrame = nil
 local addAltFrame = nil
 local addMainFrame = nil
@@ -204,18 +198,6 @@ local confirmDeleteFrame = nil
 local confirmMainDeleteFrame = nil
 local MainsTable = {}
 local EditAltsTable = {}
-local GuildXP = {
-    weekly = {
-        data = {},
-        sorted = {},
-        totalXP = 0
-    },
-    total = {
-        data = {},
-        sorted = {},
-        totalXP = 0
-    }
-}
 
 Alts.matchFuncs = {}
 
@@ -304,60 +286,6 @@ function Alts:CheckAndUpdateIgnores()
     end
 
     self.db.char.ignores = ignores
-end
-
-function Alts:GuildContrib()
-    wipe(GuildXP.weekly.data)
-    wipe(GuildXP.total.data)
-    GuildXP.weekly.totalXP = 0
-    GuildXP.total.totalXP = 0
-    
-    local guildName = _G.GetGuildInfo("player")
-    local numMembers = _G.GetNumGuildMembers(true)
-    
-    if not guildName or numMembers == 0 then return end
-
-    local source = LibAlts.GUILD_PREFIX..guildName
-
-    for i = 1, numMembers do
-        local name, rank, rankIndex, level, class, zone, publicnote,  
-            officernote, online, status, classFileName, achPts, 
-            achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
-
-        local years, months, days, hours = _G.GetGuildRosterLastOnline(i)
-        local lastOnline = 0
-        if online then
-            lastOnline = _G.time()
-        elseif years and months and days and hours then
-            local diff = (((years*365)+(months*30)+days)*24+hours)*60*60
-            lastOnline = _G.time() - diff
-        end
-
-        local weeklyXP, totalXP, weeklyRank, totalRank = 0, 0, 0, 0
-				if not addon.WoD then
-					weeklyXP, totalXP, weeklyRank, totalRank =
-					 	_G.GetGuildRosterContribution(i)
-				end
-
-        local main = (LibAlts:GetMainForSource(name, source) or name)
-
-        GuildXP.weekly.data[main] = (GuildXP.weekly.data[main] or 0) + weeklyXP
-        GuildXP.weekly.totalXP = GuildXP.weekly.totalXP + weeklyXP
-        GuildXP.total.data[main] = (GuildXP.total.data[main] or 0) + totalXP
-        GuildXP.total.totalXP = GuildXP.total.totalXP + totalXP
-    end
-
-    wipe(GuildXP.weekly.sorted)
-    for name, xp in pairs(GuildXP.weekly.data) do
-        tinsert(GuildXP.weekly.sorted, {AltsDB:FormatUnitName(name, false), xp})
-    end
-    tsort(GuildXP.weekly.sorted, function(a,b) return a[2] > b[2] end)
-
-    wipe(GuildXP.total.sorted)
-    for name, xp in pairs(GuildXP.total.data) do
-        tinsert(GuildXP.total.sorted, {AltsDB:FormatUnitName(name, false), xp})
-    end
-    tsort(GuildXP.total.sorted, function(a,b) return a[2] > b[2] end)
 end
 
 function Alts:GetCurrentTimestamp()
@@ -892,23 +820,6 @@ function Alts:GetOptions()
                                 self:GuildExportHandler("")
                             end,
                 			order = 210
-                        },
-                		headerContribs = {
-                			order = 300,
-                			type = "header",
-                			name = L["Contributions"],
-                		},
-                        guildWeeklyButton = {
-                            name = L["Guild Contribution"],
-                            desc = L["GuildContribution_OptionDesc"],
-                            type = "execute",
-                            width = "normal",
-                            func = function()
-                            	local optionsFrame = _G.InterfaceOptionsFrame
-                                optionsFrame:Hide()
-                                self:GuildContribHandler("")
-                            end,
-                			order = 310
                         },
                     },
                 },
@@ -1483,26 +1394,6 @@ function Alts:ShowGuildExportFrame()
     achvPointsOption:SetValue(self.db.profile.exportUseAchvPoints)
     frame:AddChild(achvPointsOption)
 
-    local weeklyXPOption = AGU:Create("CheckBox")
-    weeklyXPOption:SetLabel(L["Weekly XP"])
-    weeklyXPOption:SetCallback("OnValueChanged", 
-        function(widget, event, value)
-            self.db.profile.exportUseWeeklyXP = value
-        end
-    )
-    weeklyXPOption:SetValue(self.db.profile.exportUseWeeklyXP)
-    frame:AddChild(weeklyXPOption)
-
-    local totalXPOption = AGU:Create("CheckBox")
-    totalXPOption:SetLabel(L["Total XP"])
-    totalXPOption:SetCallback("OnValueChanged", 
-        function(widget, event, value)
-            self.db.profile.exportUseTotalXP = value
-        end
-    )
-    totalXPOption:SetValue(self.db.profile.exportUseTotalXP)
-    frame:AddChild(totalXPOption)
-
     local altsOption = AGU:Create("CheckBox")
     altsOption:SetLabel(L["Alts"])
     altsOption:SetCallback("OnValueChanged", 
@@ -1566,8 +1457,6 @@ function Alts:ShowGuildExportFrame()
                 self.db.profile.exportUseOfficerNote,
                 self.db.profile.exportUseLastOnline,
                 self.db.profile.exportUseAchvPoints,
-                self.db.profile.exportUseWeeklyXP,
-                self.db.profile.exportUseTotalXP,
                 self.db.profile.exportUseAlts,
                 self.db.profile.exportEscape
             )
@@ -1582,205 +1471,6 @@ function Alts:ShowGuildExportFrame()
 			frame.multiline:SetFocus()
         end)
     frame:AddChild(exportButton)
-end
-
-function Alts:CreateGuildContribExport(period)
-    local table
-    local totalXP = 0
-    if period == "Weekly" then
-        table = GuildXP.weekly.sorted
-        totalXP = GuildXP.weekly.totalXP
-    else
-        table = GuildXP.total.sorted
-        totalXP = GuildXP.total.totalXP
-    end
-
-    local strFmt = "%s,%d"
-    local line
-    local buffer = {}
-    for i, data in ipairs(table) do
-        local name = AltsDB:FormatUnitName(data[1], false)
-        local xp = data[2]
-        line = strFmt:format(name,xp)
-        buffer[i] = line
-    end
-    tinsert(buffer, "")
-    
-    return tconcat(buffer, "\n")
-end
-
-function Alts:CreateGuildWeeklyContribExport()
-    return Alts:CreateGuildContribExport("Weekly")
-end
-
-function Alts:CreateGuildTotalContribExport()
-    return Alts:CreateGuildContribExport("Total")
-end
-
-local ContribsFrame = nil
-function Alts:ShowContribFrame()
-	-- Request an update on the guild roster
-	_G.GuildRoster()
-
-    if ContribsFrame then return end
-
-	local frame = AGU:Create("Frame")
-	frame:SetTitle(L["Guild Contributions By Main"])
-	frame:SetWidth(400)
-	frame:SetHeight(350)
-    frame:SetLayout("Flow")
-	frame:SetCallback("OnClose", function(widget)
-		widget:ReleaseChildren()
-		widget:Release()
-		ContribsFrame = nil
-	end)
-
-    ContribsFrame = frame
-    ContribsFrame.currentPeriod = "Total"
-
-	local periodDropdown = AGU:Create("Dropdown")
-	periodDropdown:SetLabel("Period")
-	periodDropdown.list = {}
-	periodDropdown:AddItem("Weekly", L["Weekly"])
-	periodDropdown:AddItem("Total", L["Total"])
-	periodDropdown:SetValue("Total")
-	periodDropdown:SetWidth(150)
-	periodDropdown:SetCallback("OnValueChanged",
-        function(widget, event, value)
-            ContribsFrame.currentPeriod = value
-            ContribsFrame.update(value)
-        end
-	)
-	frame:AddChild(periodDropdown)
-
-    local spacer = AGU:Create("Label")
-    spacer:SetText(" ")
-    spacer:SetWidth(50)
-    frame:AddChild(spacer)
-
-	local exportButton = AGU:Create("Button")
-	exportButton:SetText(L["Export"])
-	exportButton:SetWidth(100)
-	exportButton:SetPoint("RIGHT", -5, 0)
-	exportButton:SetCallback("OnClick",
-        function(widget, event, value)
-            ContribsFrame.frame:Hide()
-            if ContribsFrame and ContribsFrame.currentPeriod and 
-                ContribsFrame.currentPeriod == "Weekly" then
-                Alts:ShowExportFrame(Alts.CreateGuildWeeklyContribExport)
-            else
-                Alts:ShowExportFrame(Alts.CreateGuildTotalContribExport)
-            end
-        end
-	)
-    frame:AddChild(exportButton)
-
-    local spacer = AGU:Create("Label")
-    spacer:SetFullWidth(true)
-    spacer:SetHeight(50)
-    spacer:SetText(" ")
-    frame:AddChild(spacer)
-
-    local header = AGU:Create("SimpleGroup")
-    header:SetLayout("Flow")
-    header:SetFullWidth(true)
-    frame:AddChild(header)
-
-    local nameHeader = AGU:Create("Label")
-    nameHeader:SetText(L["Main Name"])
-    nameHeader:SetRelativeWidth(0.5)
-    header:AddChild(nameHeader)
-    local xpHeader = AGU:Create("Label")
-    xpHeader:SetText(L["XP"])
-    xpHeader:SetRelativeWidth(0.3)
-    xpHeader.label:SetJustifyH("RIGHT")
-    xpHeader:SetCallback("OnRelease",
-        function(widget)
-            widget.label:SetJustifyH("LEFT")
-        end
-    )
-    header:AddChild(xpHeader)
-    local percHeader = AGU:Create("Label")
-    percHeader:SetText(L["Percent"])
-    percHeader:SetRelativeWidth(0.2)
-    percHeader.label:SetJustifyH("RIGHT")
-    percHeader:SetCallback("OnRelease",
-        function(widget)
-            widget.label:SetJustifyH("LEFT")
-        end
-    )
-    header:AddChild(percHeader)
-
-    local line = AGU:Create("Heading")
-    line:SetFullWidth(true)
-    line:SetText("")
-    frame:AddChild(line)
-
-    local simple = AGU:Create("SimpleGroup")
-    simple:SetLayout("Fill")
-    simple:SetFullHeight(true)
-    simple:SetFullWidth(true)
-    frame:AddChild(simple)
-
-    local scroll = AGU:Create("ScrollFrame")
-    scroll:SetLayout("Flow")
-    simple:AddChild(scroll)
-    ContribsFrame.scroll = scroll
-
-    ContribsFrame.update = function(value)
-        self:GuildContrib()
-        scroll:ReleaseChildren()
-        scroll:PauseLayout()
-        
-        local table, totalXP
-        if value == "Weekly" then
-            table = GuildXP.weekly.sorted
-            totalXP = GuildXP.weekly.totalXP
-        else
-            table = GuildXP.total.sorted
-            totalXP = GuildXP.total.totalXP
-        end
-
-        for i, data in ipairs(table) do
-            local name = data[1]
-            local xp = data[2]
-
-            local nameField = AGU:Create("Label")
-            nameField:SetText(name)
-            nameField:SetRelativeWidth(0.5)
-            scroll:AddChild(nameField)
-            local xpField = AGU:Create("Label")
-            xpField:SetText(xp)
-            xpField:SetRelativeWidth(0.3)
-            xpField.label:SetJustifyH("RIGHT")
-            xpField:SetCallback("OnRelease",
-                function(widget)
-                    widget.label:SetJustifyH("LEFT")
-                end
-            )
-            scroll:AddChild(xpField)
-            local percFmt = "%.1f%%"
-            local percField = AGU:Create("Label")
-            local percent = 0
-            if totalXP > 0 then
-                percent = xp/totalXP*100
-            end
-            percField:SetText(percFmt:format(percent))
-            percField:SetRelativeWidth(0.2)
-            percField.label:SetJustifyH("RIGHT")
-            percField:SetCallback("OnRelease",
-                function(widget)
-                    widget.label:SetJustifyH("LEFT")
-                end
-            )
-            scroll:AddChild(percField)
-        end
-        scroll:ResumeLayout()
-        scroll:DoLayout()
-        frame:SetStatusText(L["Total XP"]..": "..totalXP)
-    end
-    
-    ContribsFrame.update("Total")
 end
 
 local ExportFrame = nil
@@ -2029,127 +1719,6 @@ function Alts:CreateAddMainFrame()
 	return addmain
 end
 
-function Alts:CreateContribFrame()
-	local window = _G.CreateFrame("Frame", "Alts_ContribWindow", _G.UIParent)
-	window:SetFrameStrata("DIALOG")
-	window:SetToplevel(true)
-	window:SetWidth(430)
-	window:SetHeight(370)
-	if self.db.profile.remember_contrib_pos then
-        window:SetPoint("CENTER", _G.UIParent, "CENTER",
-            self.db.profile.contrib_window_x, self.db.profile.contrib_window_y)
-    else
-	    window:SetPoint("CENTER", _G.UIParent)
-    end
-	window:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background", 
-	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
-		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
-
-	local cols = {}
-	cols[1] = {
-		["name"] = L["Main Name"],
-		["width"] = 180,
-		["align"] = "LEFT",
-		["color"] = {
-			["r"] = 1.0,
-			["g"] = 1.0,
-			["b"] = 1.0,
-			["a"] = 1.0
-		},
-		["colorargs"] = nil,
-		["bgcolor"] = {
-			["r"] = 0.0,
-			["g"] = 0.0,
-			["b"] = 0.0,
-			["a"] = 1.0
-		},
-		["DoCellUpdate"] = nil,
-	}
-	cols[2] = {
-		["name"] = L["Experience"],
-		["width"] = 150,
-		["align"] = "RIGHT",
-		["color"] = {
-			["r"] = 1.0,
-			["g"] = 1.0,
-			["b"] = 1.0,
-			["a"] = 1.0
-		},
-		["colorargs"] = nil,
-		["bgcolor"] = {
-			["r"] = 0.0,
-			["g"] = 0.0,
-			["b"] = 0.0,
-			["a"] = 1.0
-		},
-		["defaultsort"] = "asc",
-		["sort"] = "asc",
-		["DoCellUpdate"] = nil,
-	}
-
-	local table = ScrollingTable:CreateST(cols, 15, nil, nil, window);
-
-	local headertext = window:CreateFontString("Alts_Contrib_HeaderText", window, "GameFontNormalLarge")
-	headertext:SetPoint("TOP", window, "TOP", 0, -20)
-	headertext:SetText(L["Guild Contribution"])
-
-	table.frame:SetPoint("TOP", headertext, "BOTTOM", 0, -40)
-	table.frame:SetPoint("LEFT", window, "LEFT", 40, 0)
-
-	local closebutton = _G.CreateFrame("Button", nil, window, "UIPanelButtonTemplate")
-	closebutton:SetText(L["Close"])
-	closebutton:SetWidth(90)
-	closebutton:SetHeight(20)
-	closebutton:SetPoint("BOTTOM", window, "BOTTOM", 0, 20)
-	closebutton:SetScript("OnClick", function(this) this:GetParent():Hide(); end)
-
-	window.table = table
-
-    table:RegisterEvents({
-		["OnEnter"] = function (rowFrame, cellFrame, data, cols, row, realrow, column, table, ...)
-			return true;
-		end, 
-		["OnLeave"] = function(rowFrame, cellFrame, data, cols, row, realrow, column, table, ...)
-			return true;
-		end,
-    })
-
-	table:EnableSelection(true)
-	table:SetData(GuildXP.weekly.sorted, true)
-
-    window.lock = self.db.profile.lock_contrib_window
-
-    window:SetMovable(true)
-    window:RegisterForDrag("LeftButton")
-    window:SetScript("OnDragStart",
-        function(self,button)
-			if not self.lock then
-            	self:StartMoving()
-			end
-        end)
-    window:SetScript("OnDragStop",
-        function(self)
-            self:StopMovingOrSizing()
-			if Alts.db.profile.remember_contrib_pos then
-    			local scale = self:GetEffectiveScale() / _G.UIParent:GetEffectiveScale()
-    			local x, y = self:GetCenter()
-    			x, y = x * scale, y * scale
-    			x = x - _G.GetScreenWidth()/2
-    			y = y - _G.GetScreenHeight()/2
-    			x = x / self:GetScale()
-    			y = y / self:GetScale()
-    			Alts.db.profile.contrib_window_x, 
-    			    Alts.db.profile.contrib_window_y = x, y
-    			self:SetUserPlaced(false);
-            end
-        end)
-    window:EnableMouse(true)
-
-	window:Hide()
-	
-	return window
-end
-
 function Alts:CreateAltsFrame()
 	local altswindow = _G.CreateFrame("Frame", "Alts_AltsWindow", _G.UIParent)
 	altswindow:SetFrameStrata("DIALOG")
@@ -2381,21 +1950,6 @@ function Alts:AltsHandler(input)
 	altsFrame:Raise()
 end
 
-function Alts:GuildContribHandler(input)
---    self:GuildContrib()
-
---	contribFrame.table:SortData()
-
-    -- Hide the options frame if it is open.
-	local optionsFrame = _G.InterfaceOptionsFrame
-    optionsFrame:Hide()
-
---    contribFrame:Show()
---    contribFrame:Raise()
-
-    self:ShowContribFrame()
-end
-
 function Alts:GuildLogHandler(input)
     self:ShowGuildLogFrame()
 end
@@ -2437,11 +1991,6 @@ function Alts:GenerateGuildExport()
         local name, rank, rankIndex, level, class, zone, publicnote,  
             officernote, online, status, classFileName, achPts, 
             achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
-        local weeklyXP, totalXP, weeklyRank, totalRank = 0, 0, 0, 0
-				if not addon.WoD then
-					weeklyXP, totalXP, weeklyRank, totalRank =
-					 	_G.GetGuildRosterContribution(i)
-				end
 
         exportChar = true
 
@@ -2488,12 +2037,6 @@ function Alts:GenerateGuildExport()
 
             if self.db.profile.exportUseAchvPoints == true then
                 tinsert(fields, tostring(achPts or ""))
-            end
-            if self.db.profile.exportUseWeeklyXP == true then
-                tinsert(fields, tostring(weeklyXP or ""))
-            end
-            if self.db.profile.exportUseTotalXP == true then
-                tinsert(fields, tostring(totalXP or ""))
             end
 
             if self.db.profile.exportUseAlts == true then
@@ -2957,9 +2500,6 @@ function Alts:OnEnable()
 	-- Create the Alts frame for later use
 	altsFrame = self:CreateAltsFrame()
 
-	-- Create the Contributions frame for later use
-	contribFrame = self:CreateContribFrame()
-	
 	-- Create the Set Main frame to use later
 	setMainFrame = self:CreateSetMainFrame()
 	
