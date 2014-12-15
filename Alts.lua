@@ -74,6 +74,7 @@ local defaults = {
 		showInfoOnLogon = true,
 		showInfoOnWho = true,
 		showMainsInChat = true,
+		mainNameColor = { r = 0.35, g = 0.35, b = 1.0, a = 1.0 },
 		singleLineChatDisplay = true,
 		singleLineTooltipDisplay = true,
 		wrapTooltip = true,
@@ -225,12 +226,24 @@ function Alts:UnhookChatFrames()
     end
 end
 
+local ChatColorCodeFmt = "|c%02x%02x%02x%02x"
+local function GetChatColorCode(c)
+	if not c then return "" end
+	return ChatColorCodeFmt:format(c.a * 255, c.r * 255, c.g * 255, c.b * 255)
+end
+
+local MainChatColor = ""
+function Alts:SetMainChatColorCode()
+	MainChatColor = GetChatColorCode(self.db.profile.mainNameColor)
+end
+
 local function AddMainNameForChat(message, name)
     if name and #name > 0 and name ~= playerName then
         local main = AltsDB:GetMainForAlt(name)
         if main and #main > 0 then
-            local messageFmt = "%s (%s)"
-            return messageFmt:format(message, AltsDB:FormatUnitName(main, true))
+            local messageFmt = "%s (%s%s|r)"
+            return messageFmt:format(message, MainChatColor, 
+							AltsDB:FormatUnitName(main, true))
         end
     end
     
@@ -681,6 +694,7 @@ function Alts:GetOptions()
                             name = L["Main Names in Chat"],
                             desc = L["MainNamesInChat_OptionDesc"],
                             type = "toggle",
+														--width = "double",
                             set = function(info, val)
                                     self.db.profile.showMainsInChat = val
                                     if val then
@@ -692,6 +706,23 @@ function Alts:GetOptions()
                             get = function(info) return self.db.profile.showMainsInChat end,
                 			order = 105
                         },
+	                	    mainsNameColor = {
+														order = 106,
+														name = L["Main Name Color"],
+														desc = L["MainNameColor_OptDesc"],
+														type = "color",
+														hasAlpha = false,
+														width = "double",
+														set = function(info, r, g, b, a)
+															local c = self.db.profile.mainNameColor
+															c.r, c.g, c.b, c.a = r, g, b, a
+															self:SetMainChatColorCode()
+														end,
+														get = function(info)
+															local c = self.db.profile.mainNameColor
+															return c.r, c.g, c.b, c.a
+														end,					
+	                        },
                 	    mainInTooltip = {
                             name = L["Main Name In Tooltips"],
                             desc = L["Toggles the display of the main name in tooltips"],
@@ -2472,6 +2503,8 @@ end
 
 function Alts:OnEnable()
 	AltsDB:OnEnable()
+
+	self:SetMainChatColorCode()
 
 	self:UpdateMatchMethods()
 
