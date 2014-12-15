@@ -74,7 +74,7 @@ local defaults = {
 		showInfoOnLogon = true,
 		showInfoOnWho = true,
 		showMainsInChat = true,
-		mainNameColor = { r = 0.35, g = 0.35, b = 1.0, a = 1.0 },
+		mainNameColor = { r = 0.47, g = 0.47, b = 1.0, a = 1.0 },
 		singleLineChatDisplay = true,
 		singleLineTooltipDisplay = true,
 		wrapTooltip = true,
