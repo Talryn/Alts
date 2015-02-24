@@ -350,7 +350,7 @@ end
 
 function Alts:UpdateGuild()
 	guildUpdateTimer = nil
-    if not self.db.profile.autoGuildImport then return end
+	if not self.db.profile.autoGuildImport then return end
     
 	local realm = ""
     local guildName, pRank, pRankNum, guildRealm = _G.GetGuildInfo("player")
@@ -2612,16 +2612,33 @@ function Alts:UnitPopup_ShowMenu(dropdownMenu, which, unit, name, userData, ...)
 	end
 end
 
+local unitsToCheck = {
+	["target"] = true,
+	["focus"] = true,
+}
 function Alts.SetMainMenuClick()
 	local menu = _G.UIDROPDOWNMENU_INIT_MENU
 	local fullname = nil
 	local name = menu.name
 	local server = menu.server
-	if server and #server > 0 then
-		local strFormat = "%s-%s"
-		fullname = strFormat:format(name, server)
-	else
-		fullname = name
+	local unit = menu.unit
+	--if unit and #unit > 0 and unitsToCheck[unit] then
+	if unit and #unit > 0 then
+		local unitName = _G.GetUnitName(unit, true)
+		if unitName and #unitName > 0 then
+			local nameOnly, realm = AltsDB:ParseName(unitName)
+			if nameOnly and #nameOnly > 0 and realm and #realm > 0 then
+				fullname = unitName
+			end
+		end
+	end
+	if not fullname then
+		if server and #server > 0 then
+			local strFormat = "%s-%s"
+			fullname = strFormat:format(name, server)
+		else
+			fullname = name
+		end
 	end
 	Alts:SetMainHandler(fullname)
 end
@@ -2769,7 +2786,7 @@ function Alts:PLAYER_REGEN_ENABLED()
 end
 
 function Alts:GUILD_ROSTER_UPDATE(event, message)
-    self:UnregisterEvent("GUILD_ROSTER_UPDATE")
+	self:UnregisterEvent("GUILD_ROSTER_UPDATE")
 	if self.db.profile.debug then self:Print("Guild roster updated.") end
 	if not guildUpdateTimer then
 		guildUpdateTimer = self:ScheduleTimer("UpdateGuild", 5)
