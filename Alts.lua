@@ -114,7 +114,7 @@ local defaults = {
 			methods = {
 				[1] = {
 					-- <name>
-					regex = "^[ ]*([%a\128-\255]+)[ ]*$",
+					regex = "^[ ]*([%a\128-\255-]+)[ ]*$",
 					description = "<name>",
 					enabled = true,
 				},
@@ -126,49 +126,49 @@ local defaults = {
 				},
 				[3] = {
 					-- ALT: <name>
-					regex = "[Aa][Ll][Tt]:%s*([%a\128-\255]+)",
+					regex = "[Aa][Ll][Tt]:%s*([%a\128-\255-]+)",
 					description = "ALT: <name>",
 					enabled = true,
 				},
 				[4] = {
 					-- Alt of <name>
-					regex = "[Aa][Ll][Tt][ ]+[Oo][Ff][ ]+([%a\128-\255]+)",
+					regex = "[Aa][Ll][Tt][ ]+[Oo][Ff][ ]+([%a\128-\255-]+)",
 					description = "Alt of <name>",
 					enabled = true,
 				},
 				[5] = {
 					-- AKA: <name>
-					regex = "[Aa][Kk][Aa]:%s*([%a\128-\255]+)",
+					regex = "[Aa][Kk][Aa]:%s*([%a\128-\255-]+)",
 					description = "AKA: <name>",
 					enabled = true,
 				},
 				[6] = {
 					-- [<name>] or (<name>)
-					regex = "^[%[(][ ]*([%a\128-\255]+)[ ]*[)%]]",
+					regex = "^[%[(][ ]*([%a\128-\255-]+)[ ]*[)%]]",
 					description = "[<name>] or (<name>)",
 					enabled = true,
 				},
 				[7] = {
 					-- ALT(<name>)
-					regex = "[Aa][Ll][Tt][(][ ]*([%a\128-\255]+)[ ]*[)]",
+					regex = "[Aa][Ll][Tt][(][ ]*([%a\128-\255-]+)[ ]*[)]",
 					description = "ALT(<name>)",
 					enabled = true,
 				},
 				[8] = {
 					-- <name> alt
-					regex = "([%a\128-\255]+)[ ]+[Aa][Ll][Tt]",
+					regex = "([%a\128-\255-]+)[ ]+[Aa][Ll][Tt]",
 					description = "<name> alt",
 					enabled = true,
 				},
 				[9] = {
 					-- =<name>
-					regex = "^[= ]+([%a\128-\255]+)",
+					regex = "^[= ]+([%a\128-\255-]+)",
 					description = "=<name>",
 					enabled = false,
 				},
 				[10] = {
 					-- A:<name>
-					regex = "^%s*[Aa]:%s*([%a\128-\255]+)",
+					regex = "^%s*[Aa]:%s*([%a\128-\255-]+)",
 					description = "A: <name>",
 					enabled = false,
 				},
