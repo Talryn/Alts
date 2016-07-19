@@ -45,5 +45,8 @@ externals:
     Libs/LibAlts-1.0:
         url: svn://svn.wowace.com/wow/libalts-1-0/mainline/trunk
 
+    Libs/LibJSON-1.0:
+        url: git://git.wowace.com/wow/libjson-1-0/mainline.git
+
 ignore:
     - .pkgmeta

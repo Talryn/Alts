@@ -1654,7 +1654,8 @@ function Alts:CreateAddMainFrame()
 	mainlabel:SetPoint("TOP", headertext, "BOTTOM", 0, -30)
 	mainlabel:SetPoint("LEFT", addmain, "LEFT", 20, 0)
 
-	local mainname = _G.CreateFrame("EditBox", "Alts_AddMain_MainName", addmain, "InputBoxTemplate")
+	local mainname = _G.CreateFrame("EditBox", "Alts_AddMain_MainName", addmain, "AutoCompleteEditBoxTemplate")
+	mainname.autoCompleteParams = _G.AUTOCOMPLETE_LIST.ALL
 	mainname:SetFontObject(_G.ChatFontNormal)
 	mainname:SetWidth(150)
 	mainname:SetHeight(35)
@@ -1682,12 +1683,13 @@ function Alts:CreateAddMainFrame()
 	altlabel:SetText(L["Alt: "])
 	altlabel:SetPoint("TOPLEFT", mainlabel, "BOTTOMLEFT", 0, -30)
 
-	local altname = _G.CreateFrame("EditBox", "Alts_AddMain_AltName", addmain, "InputBoxTemplate")
+	local altname = _G.CreateFrame("EditBox", "Alts_AddMain_AltName", addmain, "AutoCompleteEditBoxTemplate")
+	altname.autoCompleteParams = _G.AUTOCOMPLETE_LIST.ALL
 	altname:SetFontObject(_G.ChatFontNormal)
 	altname:SetWidth(150)
 	altname:SetHeight(35)
-	altname:SetPoint("LEFT", mainname, "LEFT")
 	altname:SetPoint("TOP", altlabel, "TOP")
+	altname:SetPoint("LEFT", mainname, "LEFT")
 	altname:SetScript("OnEnterPressed",
 	    function(this)
 	        local frame = this:GetParent()
