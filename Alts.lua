@@ -2823,7 +2823,6 @@ function Alts:BN_FRIEND_ACCOUNT_ONLINE(event, message)
 end
 
 function Alts:BN_FRIEND_TOON_ONLINE(event, message)
-
 end
 
 function wrap(str, limit, indent, indent1,offset)
