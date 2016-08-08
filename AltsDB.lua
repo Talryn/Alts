@@ -52,6 +52,7 @@ local realmNames = {
     ["Burninglegion"] = "BurningLegion",
     ["Cenarioncircle"] = "CenarionCircle",
     ["Darkiron"] = "DarkIron",
+	["Darkmoonfaire"] = "DarkmoonFaire",
     ["Dath'remar"] = "Dath'Remar",
     ["Demonsoul"] = "DemonSoul",
     ["Drak'tharon"] = "Drak'Tharon",
