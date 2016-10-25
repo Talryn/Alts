@@ -1,4 +1,4 @@
-## Interface: 70000
+## Interface: 70100
 ## Title: Alts
 ## Notes: Manages social information with a focus on main-alt associations.
 ## Author: Talryn
