@@ -558,3 +558,61 @@ function AltsDB:OnEnable()
         end
     end
 end
+
+function AltsDB:SetBNetLink(battleTag, name, value)
+	if battleTag and name then
+		self.db.global.battleNet.accounts[battleTag] = self.db.global.battleNet.accounts[battleTag] or {}
+		self.db.global.battleNet.accounts[battleTag][name] = value
+	end
+end
+
+function AltsDB:AddBNetLink(battleTag, characterName, realmName)
+	if not characterName or not realmName or #realmName == 0 then return end
+	local name = AltsDB:FormatNameWithRealm(characterName, realmName)
+	self:SetBNetLink(battleTag, name, _G.time())
+	self.db.global.battleNet.characters[name] = battleTag
+end
+
+function AltsDB:RemoveBNetLink(battleTag, characterName, realmName)
+	local name = AltsDB:FormatNameWithRealm(characterName, realmName)
+	self:SetBNetLink(battleTag, name, nil)
+	self.db.global.battleNet.characters[name] = nil
+end
+
+function AltsDB:RemoveBNetAccount(battleTag)
+	if battleTag then
+		for name, value in _G.pairs(self.db.global.battleNet.accounts[battleTag] or {}) do
+			self.db.global.battleNet.characters[name] = nil
+		end
+		self.db.global.battleNet.accounts[battleTag] = nil
+	end
+end
+
+function AltsDB:GetBNetAccount(battleTag)
+	if battleTag then
+		return self.db.global.battleNet.accounts[battleTag]
+	end
+end
+
+function AltsDB:GetBNetAccountForName(name)
+	if name then
+		return self.db.global.battleNet.characters[name]
+	end
+end
+
+function AltsDB:FindBNetAccount(searchTerm)
+	if not searchTerm then return {} end
+	local results = {}
+	local term = searchTerm:lower()
+	for tag, data in _G.pairs(self.db.global.battleNet.accounts) do
+		if tag:lower():find(term) then
+			results[#results + 1] = tag
+		end
+	end
+	return results
+end
+
+function AltsDB:GetAllBNetAccounts()
+	return addon.getTableKeys(self.db.global.battleNet.accounts)
+end
+

@@ -1,12 +1,11 @@
 local _G = getfenv(0)
+local ADDON_NAME, addon = ...
 
 local string = _G.string
 local table = _G.table
 local pairs = _G.pairs
 local ipairs = _G.ipairs
 local LibStub = _G.LibStub
-
-local ADDON_NAME, addon = ...
 
 local Alts = LibStub("AceAddon-3.0"):NewAddon("Alts", "AceConsole-3.0", "AceHook-3.0", "AceEvent-3.0", "AceTimer-3.0")
 local AltsDB = addon.AltsDB
@@ -17,24 +16,6 @@ local LDB = LibStub("LibDataBroker-1.1")
 local icon = LibStub("LibDBIcon-1.0")
 local LibAlts = LibStub("LibAlts-1.0")
 local ScrollingTable = LibStub("ScrollingTable")
-
--- Try to remove the Git hash at the end, otherwise return the passed in value.
-local function cleanupVersion(version)
-	local iter = string.gmatch(version, "(.*)-[a-z0-9]+$")
-	if iter then
-		local ver = iter()
-		if ver and #ver >= 3 then
-			return ver
-		end
-	end
-	return version
-end
-
-addon.addonTitle = _G.GetAddOnMetadata(ADDON_NAME,"Title")
-addon.addonVersion = cleanupVersion("@project-version@")
-addon.CURRENT_BUILD, addon.CURRENT_INTERNAL, 
-    addon.CURRENT_BUILD_DATE, addon.CURRENT_UI_VERSION = _G.GetBuildInfo()
-addon.WoD = addon.CURRENT_UI_VERSION >= 60000
 
 local DEBUG = false
 
@@ -172,8 +153,27 @@ local defaults = {
 					description = "A: <name>",
 					enabled = false,
 				},
+				[11] = {
+					-- alt-<name>
+					regex = "^%s*[Aa][Ll][Tt]-%s*([%a\128-\255-]+)",
+					description = "alt-<name>",
+					enabled = false,
+				},
+				[12] = {
+					-- @<name>
+					regex = "^%s*@%s*([%a\128-\255-]+)",
+					description = "@<name>",
+					enabled = true,
+				},
+
 			},
 			customMethods = {},
+		},
+		battleNet = {
+			rememberPos = true,
+			browserX = 0,
+			browserY = 0,
+			lockBrowser = false,
 		},
 	},
 	realm = {
@@ -185,7 +185,13 @@ local defaults = {
 	char = {
 	    friends = {},
 	    ignores = {},
-	}
+	},
+	global = {
+		battleNet = {
+			accounts = {},
+			characters = {},
+		},
+	},
 }
 
 local guildUpdateTimer = nil
@@ -967,6 +973,7 @@ end
 function Alts:OnInitialize()
     -- Called when the addon is loaded
     self.db = LibStub("AceDB-3.0"):New("AltsDB", defaults, "Default")
+	addon.db = self.db
 
 	self.logonTime = self:GetCurrentTimestamp()
 
@@ -1011,6 +1018,7 @@ function Alts:OnInitialize()
 	self:RegisterChatCommand("getallmains", "GetAllMainsHandler")
 	self:RegisterChatCommand("guildlog", "GuildLogHandler")
 	self:RegisterChatCommand("guildexport", "GuildExportHandler")
+	self:RegisterChatCommand("getbnet", "GetBnetHandler")
 
 	-- Create the LDB launcher
 	altsLDB = LDB:NewDataObject("Alts",{
@@ -1051,6 +1059,12 @@ function Alts:OnInitialize()
 	playerName = _G.UnitName("player")
 	playerRealm = _G.GetRealmName()
 	playerRealmAbbr = AltsDB:FormatRealmName(playerRealm)
+
+	for name, obj in pairs(addon.modules) do
+		if obj and obj.OnInitialize then
+			obj:OnInitialize()
+		end
+	end
 end
 
 function Alts:SetMainHandler(input)
@@ -1224,6 +1238,20 @@ function Alts:GetMainHandler(input)
 	end	
 end
 
+function Alts:GetBnetHandler(input)
+	local fmt = "%s: %s"
+	if input and #input > 0 then
+		local results = AltsDB:FindBNetAccount(input)
+		for i, battleTag in _G.ipairs(results) do
+			local account = AltsDB:GetBNetAccount(battleTag) or {}
+			local names = addon.getTableKeys(account)
+			_G.table.sort(names)
+			local list = tconcat(names, ", ")
+			self:Print(fmt:format(battleTag or "-", list))
+		end
+	end
+end
+	
 function Alts:AddAltHandler(main)
 	if main and #main > 0 then
         --self:StaticPopupSetMain(alt, main)
@@ -2522,9 +2550,6 @@ function Alts:OnEnable()
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
 	self:RegisterEvent("PLAYER_REGEN_DISABLED")
 
-	--self:RegisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
-	--self:RegisterEvent("BN_FRIEND_TOON_ONLINE")
-
 	-- Register event and call roster to import guild members and alts
 	self:RegisterEvent("GUILD_ROSTER_UPDATE")
 	_G.GuildRoster()
@@ -2568,6 +2593,12 @@ function Alts:OnEnable()
 	if self.db.profile.showMainsInChat then
 		self:HookChatFrames()
 	end
+
+	for name, obj in pairs(addon.modules) do
+		if obj and obj.Enable then
+			obj:Enable()
+		end
+	end
 end
 
 function Alts:OnDisable()
@@ -2577,6 +2608,12 @@ function Alts:OnDisable()
 	-- Remove the menu items
 	self:RemoveFromUnitPopupMenu()
     self:UnhookChatFrames()
+
+	for name, obj in pairs(addon.modules) do
+		if obj and obj.Disable then
+			obj:Disable()
+		end
+	end
 end
 
 function Alts:AddToUnitPopupMenu()
@@ -2749,6 +2786,13 @@ function Alts:DisplayMain(name)
             self:Print(YELLOW..AltsDB:FormatUnitName(name, true)..": "..WHITE..altList)
         end
     end
+	if name then
+		local tag = AltsDB:GetBNetAccountForName(name) or AltsDB:GetBNetAccountForName(main)
+		if tag then
+			local fmt = "%s: %s"
+			self:Print(fmt:format(name, tag))
+		end
+	end
 end
 
 function Alts:CHAT_MSG_SYSTEM(event, message)
@@ -2799,30 +2843,13 @@ function Alts:FRIENDLIST_UPDATE(event, message)
     self:UnregisterEvent("FRIENDLIST_UPDATE")
 	if self.db.profile.debug then self:Print("Friend list updated.") end
     self:CheckAndUpdateFriends()
+	addon:FireCallback("FriendListUpdate")
 end
 
 function Alts:IGNORELIST_UPDATE(event, message)
     self:UnregisterEvent("IGNORELIST_UPDATE")
 	if self.db.profile.debug then self:Print("Ignore list updated.") end
     self:CheckAndUpdateIgnores()
-end
-
-function Alts:BN_FRIEND_ACCOUNT_ONLINE(event, message)
-    for i = 1, _G.BNGetNumFriends() do
-        local presenceID, givenName, surname, toonName, toonID, client, 
-            isOnline, lastOnline, isAFK, isDND, messageText, noteText, 
-            isFriend, unknown = _G.BNGetFriendInfo(i)
-        if presenceID == message then
-            self:Print(presenceID..","..givenName..","..surname..","..toonName..","..
-                toonID..","..client..","..isOnline..",".._G.date("%c",lastOnline)..
-                ","..isAFK..","
-                ..isDND..","..messageText or "nil"..","..noteText or "nil"..","..
-                isFriend)
-        end
-    end
-end
-
-function Alts:BN_FRIEND_TOON_ONLINE(event, message)
 end
 
 function wrap(str, limit, indent, indent1,offset)
