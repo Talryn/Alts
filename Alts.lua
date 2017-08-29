@@ -165,6 +165,12 @@ local defaults = {
 					description = "@<name>",
 					enabled = true,
 				},
+				[13] = {
+					-- ALT <name>
+					regex = "[Aa][Ll][Tt]%s*([%a\128-\255-]+)",
+					description = "ALT <name>",
+					enabled = true,
+				},
 
 			},
 			customMethods = {},
