@@ -272,16 +272,14 @@ end
 
 function Alts:CheckAndUpdateFriends()
     local friends = {}
-    local numFriends = _G.GetNumFriends()
+    local numFriends = C_FriendList.GetNumFriends()
     local strFmt = L["FriendsLog_RemovedFriend"]
     
-    local name, level, class, area, connected, status, note, RAF
-    
     for i = 1, numFriends do
-        name, level, class, area, connected, status, note, RAF = 
-			_G.GetFriendInfo(i)
+        local info = C_FriendList.GetFriendInfoByIndex(i) or {}
+		local name = info.name
         if name and name ~= "" then
-            friends[name] = (note or "")
+            friends[name] = (info.note or "")
         end
     end
     
@@ -303,7 +301,7 @@ function Alts:CheckAndUpdateIgnores()
     local name, value
     
     for i = 1, numIgnores do
-        name = _G.GetIgnoreName(i)
+        name = C_FriendList.GetIgnoreName(i)
         if name and name ~= "?" then
             ignores[name] = true
         end
