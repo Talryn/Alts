@@ -297,7 +297,7 @@ end
 
 function Alts:CheckAndUpdateIgnores()
     local ignores = {}
-    local numIgnores = _G.GetNumIgnores()
+    local numIgnores = C_FriendList.GetNumIgnores()
     local strFmt = L["IgnoreLog_RemovedIgnore"]
     
     local name, value
