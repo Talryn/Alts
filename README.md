@@ -1,6 +1,6 @@
 ## Overview
 
-Alts is a World of Warcraft addon that allows you to setup main-alt relationships and have that information displayed in various areas. It uses the [LibAlts](http://www.wowace.com/addons/libalts-1-0/) library to share data with other addons. For a list of other addons using LibAlts, see [here](http://www.wowace.com/addons/libalts-1-0/reverse-relationships/).
+Alts is a World of Warcraft addon that allows you to setup main-alt relationships and have that information displayed in various areas. It uses the [LibAlts](https://www.wowace.com/addons/libalts-1-0/) library to share data with other addons. For a list of other addons using LibAlts, see [here](https://www.wowace.com/addons/libalts-1-0/reverse-relationships/).
 
 ## Bugs/Enhancements
 
@@ -26,11 +26,11 @@ Main/Alt information can be set and managed:
 
 Command line options:
 
-* **alts <searchterm>** - Brings up the main window. If search term is provided, it will use it to search the main-alt data.
-* **setmain <alt> <main>** - Adds the specified alt as an alt of the specified main.
-* **delalt <alt> <main>** - Deletes the specified alt for the specified main.
-* **getalts <main>** - Gets the list of alts for the specified main.
-* **getmain <alt>** - Gets the main for the specified alt.
+    alts <searchterm> - Brings up the main window. If search term is provided, it will use it to search the main-alt data.
+    setmain <alt> <main> - Adds the specified alt as an alt of the specified main.
+    delalt <alt> <main> - Deletes the specified alt for the specified main.
+    getalts <main> - Gets the list of alts for the specified main.
+    getmain <alt> - Gets the main for the specified alt.
 
 ## Automated Guild Import
 
@@ -38,15 +38,15 @@ Alts will automatically scan the guild notes for a character who is in a guild. 
 
 The following guild note formats work:
 
-* <main name>'s alt
-* Alt of <main name>
-* ALT: <main name>
-* AKA: <main name>
-* (<main name>) Must be at the start of the note though.
-* [<main name>] Must be at the start of the note though.
-* <main name> alt
-* <main name>
-* ALT(<main name>)
+* [main name]'s alt
+* Alt of [main name]
+* ALT: [main name]
+* AKA: [main name]
+* ([main name]) Must be at the start of the note though.
+* [[main name]] Must be at the start of the note though.
+* [main name] alt
+* [main name]
+* ALT([main name])
 
 The matching is not case sensitive. If a note with one of those formats is found and the main name is in the guild, then it will create a main/alt link.
 
@@ -75,4 +75,4 @@ Alts also takes snapshots of your friends and ignore lists and displays any remo
 
 If you want to report a bug or ask for an enhancement, feel free to submit a ticket:
 
-http://www.wowace.com/addons/alts/tickets/
+https://www.wowace.com/addons/alts/tickets/
