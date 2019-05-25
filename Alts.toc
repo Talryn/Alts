@@ -8,7 +8,7 @@
 ## X-Category: Interface Enhancements
 ## SavedVariables: AltsDB
 ## X-Curse-Project-ID: 26572
-## X-WoWI-ID:
+## X-WoWI-ID: 24950
 
 embeds.xml
 
