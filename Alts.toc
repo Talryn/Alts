@@ -5,8 +5,10 @@
 ## Version: @project-version@
 ## OptionalDeps: Ace3, LibDeformat-3.0, lib-st, LibDataBroker-1.1, LibDBIcon-1.0
 ## X-Embeds: Ace3
-## X-Category: Interface Enhancements 
+## X-Category: Interface Enhancements
 ## SavedVariables: AltsDB
+## X-Curse-Project-ID: 26572
+## X-WoWI-ID:
 
 embeds.xml
 
