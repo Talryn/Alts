@@ -22,7 +22,7 @@ local DEBUG = false
 -- Need to setup an AltHandler or Proxy so that it can be standalone if needed
 -- If using LibAlt then call LibAlt set, delete, and remove and allow the callback
 -- to update our local data.  Might be able to get rid of the Mains tables then.
--- If using the local handler, then it 
+-- If using the local handler, then it
 
 local GREEN = "|cff00ff00"
 local YELLOW = "|cffffff00"
@@ -84,10 +84,10 @@ local defaults = {
 		reportGuildChanges = true,
 		reportTo = "Chat",
 		menusToModify = {
-			["PLAYER"] = true, 
-			["PARTY"] = true, 
-			["FRIEND"] = true, 
-			["FRIEND_OFFLINE"] = true, 
+			["PLAYER"] = true,
+			["PARTY"] = true,
+			["FRIEND"] = true,
+			["FRIEND_OFFLINE"] = true,
 			["RAID_PLAYER"] = true,
 		},
 		-- Rules and config for matching alts
@@ -254,11 +254,11 @@ local function AddMainNameForChat(message, name)
         local main = AltsDB:GetMainForAlt(name)
         if main and #main > 0 then
             local messageFmt = "%s (%s%s|r)"
-            return messageFmt:format(message, MainChatColor, 
+            return messageFmt:format(message, MainChatColor,
 							AltsDB:FormatUnitName(main, true))
         end
     end
-    
+
     return message
 end
 
@@ -274,7 +274,7 @@ function Alts:CheckAndUpdateFriends()
     local friends = {}
     local numFriends = C_FriendList.GetNumFriends()
     local strFmt = L["FriendsLog_RemovedFriend"]
-    
+
     for i = 1, numFriends do
         local info = C_FriendList.GetFriendInfoByIndex(i) or {}
 		local name = info.name
@@ -282,7 +282,7 @@ function Alts:CheckAndUpdateFriends()
             friends[name] = (info.note or "")
         end
     end
-    
+
     -- Check for removed friends
     for name, note in pairs(self.db.char.friends) do
         if friends[name] == nil and self.db.profile.reportRemovedFriends == true then
@@ -297,16 +297,16 @@ function Alts:CheckAndUpdateIgnores()
     local ignores = {}
     local numIgnores = C_FriendList.GetNumIgnores()
     local strFmt = L["IgnoreLog_RemovedIgnore"]
-    
+
     local name, value
-    
+
     for i = 1, numIgnores do
         name = C_FriendList.GetIgnoreName(i)
         if name and name ~= "?" then
             ignores[name] = true
         end
     end
-    
+
     -- Check for removed ignores
     for name, value in pairs(self.db.char.ignores) do
         if ignores[name] == nil and self.db.profile.reportRemovedIgnores == true then
@@ -324,7 +324,7 @@ end
 function Alts:UpdateMatchMethods()
 	wipe(self.matchFuncs)
 
-	if not self.db.profile.altMatching then 
+	if not self.db.profile.altMatching then
 		self:Print("Error: No alt matching rules found.")
 		return
 	end
@@ -333,7 +333,7 @@ function Alts:UpdateMatchMethods()
 		for i, v in ipairs(self.db.profile.altMatching.methods) do
 			if v.enabled and v.regex and _G.type(v.regex) == "string" then
 				local f = v.regex
-				tinsert(self.matchFuncs, 
+				tinsert(self.matchFuncs,
 					function(val)
 				        return val:match(f)
 					end
@@ -348,7 +348,7 @@ function Alts:UpdateMatchMethods()
 		for i, v in ipairs(self.db.profile.altMatching.customMethods) do
 			if v.enabled and v.regex and _G.type(v.regex) == "string" then
 				local f = v.regex
-				tinsert(self.matchFuncs, 
+				tinsert(self.matchFuncs,
 					function(val)
 				        return val:match(f)
 					end
@@ -361,7 +361,7 @@ end
 function Alts:UpdateGuild()
 	guildUpdateTimer = nil
 	if not self.db.profile.autoGuildImport then return end
-    
+
 	local realm = ""
     local guildName, pRank, pRankNum, guildRealm = _G.GetGuildInfo("player")
 	if not guildRealm or guildRealm == "" then
@@ -372,22 +372,22 @@ function Alts:UpdateGuild()
 	end
 
     local numMembers = _G.GetNumGuildMembers(true)
-    
+
     if not guildName or numMembers == 0 then return end
 
     local source = LibAlts.GUILD_PREFIX..guildName
 
     AltsDB:RemoveSource(source)
-    
+
     local guildMembers = {}
     local numAlts = 0
     local numMains = 0
-    
+
     -- Build a list of the guild members
     -- Using it later to verify that names are in the guild
     for i = 1, numMembers do
-        local name, rank, rankIndex, level, class, zone, publicnote,  
-            officernote, online, status, classFileName, achPts, 
+        local name, rank, rankIndex, level, class, zone, publicnote,
+            officernote, online, status, classFileName, achPts,
             achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
         local years, months, days, hours = _G.GetGuildRosterLastOnline(i)
 
@@ -417,14 +417,14 @@ function Alts:UpdateGuild()
             local joinLogFmt = "%s  %s "..L["GuildLog_JoinedGuild"]
             for name, lastOnline in pairs(guildMembers) do
                 if self.db.realm.guilds[guildName][name] == nil then
-                    if self.db.profile.reportGuildChanges == true and 
+                    if self.db.profile.reportGuildChanges == true and
 						self.db.profile.reportTo == "Chat" then
                         self:Print(joinFmt:format(name))
                     end
                     tinsert(self.db.realm.guildLog[guildName],
                         joinLogFmt:format(self:GetCurrentTimestamp(), name))
 					updates = updates + 1
-                end 
+                end
             end
 
             local leaveFmt = "%s "..L["GuildLog_LeftGuild"]
@@ -434,21 +434,21 @@ function Alts:UpdateGuild()
                     local nameWithMain = name
                     local main = AltsDB:GetMain(name)
                     if main and #main > 0 then
-                        nameWithMain = nameWithMainFmt:format(name, 
+                        nameWithMain = nameWithMainFmt:format(name,
 							AltsDB:FormatUnitName(main, true))
                     end
-                    if self.db.profile.reportGuildChanges == true and  
+                    if self.db.profile.reportGuildChanges == true and
 						self.db.profile.reportTo == "Chat" then
                         self:Print(leaveFmt:format(nameWithMain))
                     end
                     tinsert(self.db.realm.guildLog[guildName],
-                        leaveLogFmt:format(self:GetCurrentTimestamp(), 
+                        leaveLogFmt:format(self:GetCurrentTimestamp(),
 							nameWithMain))
 					updates = updates + 1
-                end 
+                end
             end
-			if self.db.profile.reportGuildChanges and 
-				self.db.profile.reportTo == "GuildLog" and updates > 0 
+			if self.db.profile.reportGuildChanges and
+				self.db.profile.reportTo == "GuildLog" and updates > 0
 				and not _G.UnitAffectingCombat("player") then
 				self:ShowGuildLogFrame()
 			end
@@ -460,8 +460,8 @@ function Alts:UpdateGuild()
 
     -- Walk through the list and look for alt names
     for i = 1, numMembers do
-        local name, rank, rankIndex, level, class, zone, publicnote,  
-            officernote, online, status, classFileName, achPts, 
+        local name, rank, rankIndex, level, class, zone, publicnote,
+            officernote, online, status, classFileName, achPts,
             achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
         local years, months, days, hours = _G.GetGuildRosterLastOnline(i)
 
@@ -473,9 +473,9 @@ function Alts:UpdateGuild()
 			if officernote and #officernote > 0 then
 	            main = AltsDB:FormatUnitName(v(officernote))
 	            if main and #main > 0 then
-	                if guildMembers[main] then 
+	                if guildMembers[main] then
 	                    break
-					elseif not AltsDB:HasRealm(main) and 
+					elseif not AltsDB:HasRealm(main) and
 						guildMembers[AltsDB:FormatNameWithRealm(main,realm)] then
 						main = AltsDB:FormatNameWithRealm(main,realm)
 						break
@@ -492,7 +492,7 @@ function Alts:UpdateGuild()
 	            if main and #main > 0 then
 	                if guildMembers[main] then
 	                    break
-					elseif not AltsDB:HasRealm(main) and 
+					elseif not AltsDB:HasRealm(main) and
 						guildMembers[AltsDB:FormatNameWithRealm(main,realm)] then
 						main = AltsDB:FormatNameWithRealm(main,realm)
 						break
@@ -504,7 +504,7 @@ function Alts:UpdateGuild()
 	            end
 			end
         end
-        
+
         -- Check if we found a valid alt name
         if main and #main > 0 then
             if guildMembers[main] then
@@ -731,7 +731,7 @@ function Alts:GetOptions()
 														get = function(info)
 															local c = self.db.profile.mainNameColor
 															return c.r, c.g, c.b, c.a
-														end,					
+														end,
 	                        },
                 	    mainInTooltip = {
                             name = L["Main Name In Tooltips"],
@@ -833,9 +833,9 @@ function Alts:GetOptions()
 							    ["GuildLog"] = L["Guild Log"]
 							},
                             set = function(info, val)
-								 self.db.profile.reportTo = val 
+								 self.db.profile.reportTo = val
 							end,
-                            get = function(info) 
+                            get = function(info)
 								return self.db.profile.reportTo
 							end,
                         },
@@ -940,11 +940,11 @@ function Alts:GetOptions()
 		          desc = v.description,
 		          type = "toggle",
 		          width = "double",
-		          set = function(info, val) 
+		          set = function(info, val)
 								self.db.profile.altMatching.methods[i].enabled = val
 								self:UpdateMatchMethods()
 							end,
-		          get = function(info) 
+		          get = function(info)
 								return self.db.profile.altMatching.methods[i].enabled
 							end,
 		        }
@@ -973,7 +973,7 @@ function Alts:AltsDebugHandler(input)
 		self:Print("Debugging is "..(self.db.profile.debug and "on" or "off"))
 	end
 end
-	
+
 function Alts:OnInitialize()
     -- Called when the addon is loaded
     self.db = LibStub("AceDB-3.0"):New("AltsDB", defaults, "Default")
@@ -1059,7 +1059,7 @@ function Alts:OnInitialize()
 		end
 	})
 	icon:Register("AltsLDB", altsLDB, self.db.profile.minimap)
-	
+
 	playerName = _G.UnitName("player")
 	playerRealm = _G.GetRealmName()
 	playerRealmAbbr = AltsDB:FormatRealmName(playerRealm)
@@ -1092,7 +1092,7 @@ function Alts:SetMainHandler(input)
 		end
 	else
 		self:Print(L["Usage: /setmain <alt> <main>"])
-	end	
+	end
 end
 
 function Alts:StaticPopupSetMain(alt, main)
@@ -1141,7 +1141,7 @@ function Alts:DelAltHandler(input)
 		end
 	else
 		self:Print(L["Usage: /delalt <alt> <main>"])
-	end	
+	end
 end
 
 function Alts:IsMainHandler(input)
@@ -1224,13 +1224,13 @@ function Alts:GetAltsHandler(input)
 		end
 	else
 		self:Print(L["Usage: /getalts <main>"])
-	end	
+	end
 end
 
 function Alts:GetMainHandler(input)
 	if input and #input > 0 then
 		local main, altFound = AltsDB:GetMainForAlt(input)
-	
+
 		if main and #main > 0 then
             local strFormat = L["Main for %s: %s"]
 		    self:Print(strFormat:format(AltsDB:FormatUnitName(altFound), AltsDB:FormatUnitName(main)))
@@ -1239,7 +1239,7 @@ function Alts:GetMainHandler(input)
 		end
 	else
 		self:Print(L["Usage: /getmain <alt>"])
-	end	
+	end
 end
 
 function Alts:GetBnetHandler(input)
@@ -1255,7 +1255,7 @@ function Alts:GetBnetHandler(input)
 		end
 	end
 end
-	
+
 function Alts:AddAltHandler(main)
 	if main and #main > 0 then
         --self:StaticPopupSetMain(alt, main)
@@ -1337,7 +1337,7 @@ function Alts:ShowGuildLogFrame()
                 scroll:AddChild(label)
                 count = count + 1
             end
-            
+
             if value == true and count == 50 then break end
         end
         scroll:ResumeLayout()
@@ -1345,7 +1345,7 @@ function Alts:ShowGuildLogFrame()
         local statusFmt = L["Entries_Displayed"]
         frame:SetStatusText(statusFmt:format(count, entries))
     end
-    
+
     GuildLogFrame.update(true)
 end
 
@@ -1385,7 +1385,7 @@ function Alts:ShowGuildExportFrame()
 
     local nameOption = AGU:Create("CheckBox")
     nameOption:SetLabel(L["Name"])
-    nameOption:SetCallback("OnValueChanged", 
+    nameOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseName = value
         end
@@ -1395,7 +1395,7 @@ function Alts:ShowGuildExportFrame()
 
     local levelOption = AGU:Create("CheckBox")
     levelOption:SetLabel(L["Level"])
-    levelOption:SetCallback("OnValueChanged", 
+    levelOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseLevel = value
         end
@@ -1405,7 +1405,7 @@ function Alts:ShowGuildExportFrame()
 
     local rankOption = AGU:Create("CheckBox")
     rankOption:SetLabel(L["Rank"])
-    rankOption:SetCallback("OnValueChanged", 
+    rankOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseRank = value
         end
@@ -1415,7 +1415,7 @@ function Alts:ShowGuildExportFrame()
 
     local classOption = AGU:Create("CheckBox")
     classOption:SetLabel(L["Class"])
-    classOption:SetCallback("OnValueChanged", 
+    classOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseClass = value
         end
@@ -1425,7 +1425,7 @@ function Alts:ShowGuildExportFrame()
 
     local publicNoteOption = AGU:Create("CheckBox")
     publicNoteOption:SetLabel(L["Public Note"])
-    publicNoteOption:SetCallback("OnValueChanged", 
+    publicNoteOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUsePublicNote = value
         end
@@ -1435,7 +1435,7 @@ function Alts:ShowGuildExportFrame()
 
     local officerNoteOption = AGU:Create("CheckBox")
     officerNoteOption:SetLabel(L["Officer Note"])
-    officerNoteOption:SetCallback("OnValueChanged", 
+    officerNoteOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseOfficerNote = value
         end
@@ -1445,7 +1445,7 @@ function Alts:ShowGuildExportFrame()
 
     local lastOnlineOption = AGU:Create("CheckBox")
     lastOnlineOption:SetLabel(L["Last Online"])
-    lastOnlineOption:SetCallback("OnValueChanged", 
+    lastOnlineOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseLastOnline = value
         end
@@ -1455,7 +1455,7 @@ function Alts:ShowGuildExportFrame()
 
     local achvPointsOption = AGU:Create("CheckBox")
     achvPointsOption:SetLabel(L["Achievement Points"])
-    achvPointsOption:SetCallback("OnValueChanged", 
+    achvPointsOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseAchvPoints = value
         end
@@ -1465,7 +1465,7 @@ function Alts:ShowGuildExportFrame()
 
     local altsOption = AGU:Create("CheckBox")
     altsOption:SetLabel(L["Alts"])
-    altsOption:SetCallback("OnValueChanged", 
+    altsOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportUseAlts = value
         end
@@ -1480,7 +1480,7 @@ function Alts:ShowGuildExportFrame()
 
     local escapeOption = AGU:Create("CheckBox")
     escapeOption:SetLabel(L["GuildExport_Escape"])
-    escapeOption:SetCallback("OnValueChanged", 
+    escapeOption:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportEscape = value
         end
@@ -1490,7 +1490,7 @@ function Alts:ShowGuildExportFrame()
 
     local onlyMains = AGU:Create("CheckBox")
     onlyMains:SetLabel(L["GuildExport_OnlyMains"])
-    onlyMains:SetCallback("OnValueChanged", 
+    onlyMains:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportOnlyMains = value
         end
@@ -1500,7 +1500,7 @@ function Alts:ShowGuildExportFrame()
 
     local guildAlts = AGU:Create("CheckBox")
     guildAlts:SetLabel(L["GuildExport_OnlyGuildAlts"])
-    guildAlts:SetCallback("OnValueChanged", 
+    guildAlts:SetCallback("OnValueChanged",
         function(widget, event, value)
             self.db.profile.exportOnlyGuildAlts = value
         end
@@ -1544,7 +1544,7 @@ end
 
 local ExportFrame = nil
 function Alts:ShowExportFrame(exportFunc)
-    if not exportFunc or _G.type(exportFunc) ~= "function" then return end 
+    if not exportFunc or _G.type(exportFunc) ~= "function" then return end
 
     if ExportFrame then return end
 
@@ -1584,7 +1584,7 @@ function Alts:CreateAddAltFrame()
 	addalt:SetHeight(200)
 	addalt:SetPoint("CENTER", _G.UIParent)
 	addalt:SetBackdrop(
-		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
+		{bgFile="Interface\\ChatFrame\\ChatFrameBackground",
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	addalt:SetBackdropColor(0,0,0,1)
@@ -1615,7 +1615,7 @@ function Alts:CreateAddAltFrame()
 	savebutton:SetWidth(100)
 	savebutton:SetHeight(20)
 	savebutton:SetPoint("BOTTOM", addalt, "BOTTOM", -60, 20)
-	savebutton:SetScript("OnClick", 
+	savebutton:SetScript("OnClick",
 	    function(this)
 	        local frame = this:GetParent()
 	        local main = frame.charname:GetText()
@@ -1629,7 +1629,7 @@ function Alts:CreateAddAltFrame()
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
 	cancelbutton:SetPoint("BOTTOM", addalt, "BOTTOM", 60, 20)
-	cancelbutton:SetScript("OnClick", 
+	cancelbutton:SetScript("OnClick",
 	    function(this)
 	        this:GetParent():Hide()
 	        editAltsFrame:Show()
@@ -1672,7 +1672,7 @@ function Alts:CreateAddMainFrame()
 	addmain:SetHeight(200)
 	addmain:SetPoint("CENTER", _G.UIParent)
 	addmain:SetBackdrop(
-		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
+		{bgFile="Interface\\ChatFrame\\ChatFrameBackground",
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	addmain:SetBackdropColor(0,0,0,1)
@@ -1745,7 +1745,7 @@ function Alts:CreateAddMainFrame()
 	savebutton:SetWidth(100)
 	savebutton:SetHeight(20)
 	savebutton:SetPoint("BOTTOM", addmain, "BOTTOM", -60, 20)
-	savebutton:SetScript("OnClick", 
+	savebutton:SetScript("OnClick",
 	    function(this)
 	        local frame = this:GetParent()
 	        local main = frame.mainname:GetText()
@@ -1764,7 +1764,7 @@ function Alts:CreateAddMainFrame()
 	cancelbutton:SetWidth(100)
 	cancelbutton:SetHeight(20)
 	cancelbutton:SetPoint("BOTTOM", addmain, "BOTTOM", 60, 20)
-	cancelbutton:SetScript("OnClick", 
+	cancelbutton:SetScript("OnClick",
 	    function(this)
 	        this:GetParent():Hide()
 	        altsFrame:Show()
@@ -1802,7 +1802,7 @@ function Alts:CreateAltsFrame()
     else
 	    altswindow:SetPoint("CENTER", _G.UIParent)
     end
-	altswindow:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background", 
+	altswindow:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 
@@ -1892,7 +1892,7 @@ function Alts:CreateAltsFrame()
 	addbutton:SetWidth(90)
 	addbutton:SetHeight(20)
 	addbutton:SetPoint("BOTTOM", altswindow, "BOTTOM", -120, 70)
-	addbutton:SetScript("OnClick", 
+	addbutton:SetScript("OnClick",
 		function(this)
 		    addMainFrame.mainname:SetText("")
 		    addMainFrame.altname:SetText("")
@@ -1905,7 +1905,7 @@ function Alts:CreateAltsFrame()
 	deletebutton:SetWidth(90)
 	deletebutton:SetHeight(20)
 	deletebutton:SetPoint("BOTTOM", altswindow, "BOTTOM", 0, 70)
-	deletebutton:SetScript("OnClick", 
+	deletebutton:SetScript("OnClick",
 		function(this)
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
@@ -1924,7 +1924,7 @@ function Alts:CreateAltsFrame()
 	editbutton:SetWidth(90)
 	editbutton:SetHeight(20)
 	editbutton:SetPoint("BOTTOM", altswindow, "BOTTOM", 120, 70)
-	editbutton:SetScript("OnClick", 
+	editbutton:SetScript("OnClick",
 		function(this)
 		    local frame = this:GetParent()
 			if frame.table:GetSelection() then
@@ -1942,7 +1942,7 @@ function Alts:CreateAltsFrame()
     table:RegisterEvents({
 		["OnEnter"] = function (rowFrame, cellFrame, data, cols, row, realrow, column, table, ...)
 			return true;
-		end, 
+		end,
 		["OnLeave"] = function(rowFrame, cellFrame, data, cols, row, realrow, column, table, ...)
 			return true;
 		end,
@@ -1988,7 +1988,7 @@ function Alts:CreateAltsFrame()
     			y = y - _G.GetScreenHeight()/2
     			x = x / self:GetScale()
     			y = y / self:GetScale()
-    			Alts.db.profile.main_window_x, 
+    			Alts.db.profile.main_window_x,
     			    Alts.db.profile.main_window_y = x, y
     			self:SetUserPlaced(false);
             end
@@ -1996,7 +1996,7 @@ function Alts:CreateAltsFrame()
     altswindow:EnableMouse(true)
 
 	altswindow:Hide()
-	
+
 	return altswindow
 end
 
@@ -2059,8 +2059,8 @@ function Alts:GenerateGuildExport()
     if not guildName or not numMembers or numMembers == 0 then return 0, "" end
 
     for i = 1, numMembers do
-        local name, rank, rankIndex, level, class, zone, publicnote,  
-            officernote, online, status, classFileName, achPts, 
+        local name, rank, rankIndex, level, class, zone, publicnote,
+            officernote, online, status, classFileName, achPts,
             achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
 
         exportChar = true
@@ -2081,7 +2081,7 @@ function Alts:GenerateGuildExport()
             if self.db.profile.exportUseLevel == true then
                 tinsert(fields, tostring(level or ""))
             end
-            if self.db.profile.exportUseRank then 
+            if self.db.profile.exportUseRank then
                 tinsert(fields, escapeField(tostring(rank or ""), quote))
             end
             if self.db.profile.exportUseClass == true then
@@ -2147,7 +2147,7 @@ function Alts:CreateEditAltsFrame()
 	editaltswindow:SetHeight(300)
 	editaltswindow:SetPoint("CENTER", _G.UIParent)
 	editaltswindow:SetBackdrop(
-		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
+		{bgFile="Interface\\ChatFrame\\ChatFrameBackground",
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	editaltswindow:SetBackdropColor(0,0,0,1)
@@ -2194,7 +2194,7 @@ function Alts:CreateEditAltsFrame()
 	addbutton:SetWidth(100)
 	addbutton:SetHeight(20)
 	addbutton:SetPoint("BOTTOM", editaltswindow, "BOTTOM", -120, 20)
-	addbutton:SetScript("OnClick", 
+	addbutton:SetScript("OnClick",
     	function(this)
     	    local frame = this:GetParent()
 			self:AddAltHandler(frame.charname:GetText())
@@ -2206,7 +2206,7 @@ function Alts:CreateEditAltsFrame()
 	deletebutton:SetWidth(100)
 	deletebutton:SetHeight(20)
 	deletebutton:SetPoint("BOTTOM", editaltswindow, "BOTTOM", 0, 20)
-	deletebutton:SetScript("OnClick", 
+	deletebutton:SetScript("OnClick",
     	function(this)
     	    local frame = this:GetParent()
     		if frame.table:GetSelection() then
@@ -2264,7 +2264,7 @@ function Alts:CreateSetMainFrame()
 	setmain:SetHeight(200)
 	setmain:SetPoint("CENTER", _G.UIParent)
 	setmain:SetBackdrop(
-		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
+		{bgFile="Interface\\ChatFrame\\ChatFrameBackground",
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	setmain:SetBackdropColor(0,0,0,1)
@@ -2277,7 +2277,7 @@ function Alts:CreateSetMainFrame()
 	editbox:SetHeight(35)
 	editbox:SetPoint("CENTER", setmain)
 	editbox:SetScript("OnShow", function(this) this:SetFocus() end)
-	editbox:SetScript("OnEnterPressed", 
+	editbox:SetScript("OnEnterPressed",
 	    function(this)
 	        local frame = this:GetParent()
 	        self:SaveMainName(frame.charname:GetText(),this:GetText())
@@ -2345,11 +2345,11 @@ function Alts:CreateConfirmDeleteFrame()
 	deletewindow:SetHeight(250)
 	deletewindow:SetPoint("CENTER", _G.UIParent)
 	deletewindow:SetBackdrop(
-		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
+		{bgFile="Interface\\ChatFrame\\ChatFrameBackground",
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	deletewindow:SetBackdropColor(0,0,0,1)
-    
+
 	local headertext = deletewindow:CreateFontString("Alts_Confirm_HeaderText", deletewindow, "GameFontNormalLarge")
 	headertext:SetPoint("TOP", deletewindow, "TOP", 0, -20)
 	headertext:SetText(L["Delete Alt"])
@@ -2423,11 +2423,11 @@ function Alts:CreateConfirmMainDeleteFrame()
 	deletewindow:SetHeight(200)
 	deletewindow:SetPoint("CENTER", _G.UIParent)
 	deletewindow:SetBackdrop(
-		{bgFile="Interface\\ChatFrame\\ChatFrameBackground", 
+		{bgFile="Interface\\ChatFrame\\ChatFrameBackground",
 	    edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border", tile=true,
 		tileSize=32, edgeSize=32, insets={left=11, right=12, top=12, bottom=11}})
 	deletewindow:SetBackdropColor(0,0,0,1)
-    
+
 	local headertext = deletewindow:CreateFontString("Alts_ConfirmDelMain_HeaderText", deletewindow, "GameFontNormalLarge")
 	headertext:SetPoint("TOP", deletewindow, "TOP", 0, -20)
 	headertext:SetText(L["Delete Main"])
@@ -2495,7 +2495,7 @@ function Alts:EditAltsHandler(input)
 		editAltsFrame.charname:SetText(AltsDB:FormatUnitName(name))
 
         wipe(EditAltsTable)
-        
+
         alts = { AltsDB:GetAlts(name) }
 
         for i, v in ipairs(alts) do
@@ -2505,7 +2505,7 @@ function Alts:EditAltsHandler(input)
         editAltsFrame.table:SortData()
 		editAltsFrame:Show()
 		editAltsFrame:Raise()
-	end	
+	end
 end
 
 function Alts:SaveMainName(name, main)
@@ -2562,7 +2562,7 @@ function Alts:OnEnable()
 	self:RegisterEvent("FRIENDLIST_UPDATE")
 	self:RegisterEvent("IGNORELIST_UPDATE")
 	-- Call ShowFriends to get the friend and ignore data updated.
-	_G.ShowFriends()
+	C_FriendList.ShowFriends()
 
 	-- Populate the MainsTable
 	self:UpdateMainsTable()
@@ -2572,7 +2572,7 @@ function Alts:OnEnable()
 
 	-- Create the Set Main frame to use later
 	setMainFrame = self:CreateSetMainFrame()
-	
+
 	-- Create the Edit Alts frame for later use
 	editAltsFrame = self:CreateEditAltsFrame()
 
@@ -2625,8 +2625,8 @@ function Alts:AddToUnitPopupMenu()
 	_G.UnitPopupButtons["ALTS_SET_MAIN"] = {text = L["Set Main"], dist = 0}
 	for menu, enabled in pairs(self.db.profile.menusToModify) do
 		if menu and enabled then
-			tinsert(_G.UnitPopupMenus[menu], 
-				#_G.UnitPopupMenus[menu], 
+			tinsert(_G.UnitPopupMenus[menu],
+				#_G.UnitPopupMenus[menu],
 				"ALTS_SET_MAIN")
 		end
 	end
@@ -2699,7 +2699,7 @@ function Alts:HideAltsWindow()
 end
 
 function Alts:OnTooltipSetUnit(tooltip, ...)
-    if not self.db.profile.showMainInTooltip and 
+    if not self.db.profile.showMainInTooltip and
         not self.db.profile.showAltsInTooltip then return end
 
     local name, unitid = tooltip:GetUnit()
@@ -2768,7 +2768,7 @@ function Alts:DisplayMain(name)
             else
                 text = AltsDB:FormatUnitName(v, true)
             end
-            
+
             if i == 1 then
                 altList = text
             else
@@ -2801,11 +2801,11 @@ end
 
 function Alts:CHAT_MSG_SYSTEM(event, message)
 	local name
-	
+
 	if self.db.profile.showInfoOnWho then
 	    name = LibDeformat(message, _G.WHO_LIST_FORMAT)
 	end
-	if self.db.profile.showInfoOnLogon and not name then 
+	if self.db.profile.showInfoOnLogon and not name then
 	    name = LibDeformat(message, _G.WHO_LIST_GUILD_FORMAT)
 	end
 	if self.db.profile.showInfoOnLogon and not name then
