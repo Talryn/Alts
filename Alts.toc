@@ -1,4 +1,4 @@
-## Interface: 80100
+## Interface: 80200
 ## Title: Alts
 ## Notes: Manages social information with a focus on main-alt associations.
 ## Author: Talryn
