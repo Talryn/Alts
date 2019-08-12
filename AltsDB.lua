@@ -47,6 +47,7 @@ local realmNames = {
     ["Blade'sedge"] = "Blade'sEdge",
     ["Bleedinghollow"] = "BleedingHollow",
     ["Bloodfurnace"] = "BloodFurnace",
+    ["Bloodsailbuccaneers"] = "BloodsailBuccaneers",
     ["Boreantundra"] = "BoreanTundra",
     ["Burningblade"] = "BurningBlade",
     ["Burninglegion"] = "BurningLegion",
@@ -203,7 +204,7 @@ end
 -- @param source The data source to store it in.
 function AltsDB:SetAltLocal(main, alt, source)
     if not main or not alt then return end
-    
+
     main = self:TitleCase(main)
     alt = self:TitleCase(alt)
 
@@ -216,13 +217,13 @@ function AltsDB:SetAltLocal(main, alt, source)
         end
 
         tinsert(self.db.realm.alts[main], alt)
-    
+
         if self.Mains then
             self.Mains[alt] = main
         end
     else
         self.db.realm.altsBySource[source] = self.db.realm.altsBySource[source] or {}
-        self.db.realm.altsBySource[source][main] = 
+        self.db.realm.altsBySource[source][main] =
             self.db.realm.altsBySource[source][main] or {}
         for i,v in ipairs(self.db.realm.altsBySource[source][main]) do
             if v == alt then
@@ -231,7 +232,7 @@ function AltsDB:SetAltLocal(main, alt, source)
         end
 
         tinsert(self.db.realm.altsBySource[source][main], alt)
-    
+
         if self.MainsBySource then
             self.MainsBySource[source] = self.MainsBySource[source] or {}
             self.MainsBySource[source][alt] = main
@@ -261,7 +262,7 @@ function AltsDB:GetAlts(main)
 	end
 
     if not main then return end
-    
+
     main = self:TitleCase(main)
     local alts = {}
     local name
@@ -325,7 +326,7 @@ function AltsDB:GetAltsForSource(main, source)
     if not main or #main == 0 or not source or #source == 0 then return nil end
 
     main = self:TitleCase(main)
-    
+
     if not source then
     	if self.db.realm.alts[main] and #self.db.realm.alts[main] > 0 then
     	    return unpack(self.db.realm.alts[main])
@@ -362,7 +363,7 @@ function AltsDB:DeleteAltLocal(main, alt, source)
     	if #self.db.realm.alts[main] == 0 then
     		self.db.realm.alts[main] = nil
     	end
-	
+
     	if self.Mains then
     	    for i,v in ipairs(self.Mains) do
     	        if v[1] == alt then
@@ -382,7 +383,7 @@ function AltsDB:DeleteAltLocal(main, alt, source)
     	if #self.db.realm.altsBySource[source][main] == 0 then
     		self.db.realm.altsBySource[source][main] = nil
     	end
-	
+
     	if self.MainsBySource and self.MainsBySource[source] then
     	    for i,v in ipairs(self.MainsBySource[source]) do
     	        if v[1] == alt then
@@ -406,7 +407,7 @@ function AltsDB:DeleteAlt(main, alt, source)
 end
 
 --- Get the main for a given alt character
--- @name :GetMain 
+-- @name :GetMain
 -- @param alt Name of the alt character.
 -- @return string Name of the main character.
 function AltsDB:GetMain(alt)
@@ -427,7 +428,7 @@ function AltsDB:GetMain(alt)
     end
 end
 
---- Get the main for a given alt character.  
+--- Get the main for a given alt character.
 --- Checks the alternate form of the name.
 -- @name :GetMainForAlt
 -- @param alt Name of the alt character.
@@ -446,7 +447,7 @@ function AltsDB:GetMainForAlt(alt)
 end
 
 --- Get all the mains in the database
--- @name :GetAllMains 
+-- @name :GetAllMains
 -- @return table Table of all main names.
 function AltsDB:GetAllMains(table)
 	if self.useLibAlts then
@@ -477,7 +478,7 @@ function AltsDB:DeleteUserMain(main)
     else
         alts = { self:GetAltsForSource(main, nil) }
     end
-    
+
     if alts and #alts > 0 then
         for i, alt in pairs(alts) do
             if alt and #alt > 0 then
@@ -494,12 +495,12 @@ function AltsDB:PushLibAltsData()
                 LibAlts:SetAlt(k, alt)
             end
         end
-        
+
         for source, mains in pairs(self.db.realm.altsBySource) do
             for main, alts in pairs(mains) do
                 for i, alt in ipairs(alts) do
                     LibAlts:SetAlt(main, alt, source)
-                end 
+                end
             end
         end
     end
@@ -534,7 +535,7 @@ function AltsDB:OnInitialize(Alts)
     self:UpdateMains()
 
     -- Check that LibAlts is available and has the correct methods
-    if LibAlts and LibAlts.RegisterCallback and LibAlts.SetAlt and 
+    if LibAlts and LibAlts.RegisterCallback and LibAlts.SetAlt and
         LibAlts.DeleteAlt and LibAlts.RemoveSource and LibAlts.GetAlts then
         self.useLibAlts = true
     end
@@ -615,4 +616,3 @@ end
 function AltsDB:GetAllBNetAccounts()
 	return addon.getTableKeys(self.db.global.battleNet.accounts)
 end
-
