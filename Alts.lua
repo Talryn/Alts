@@ -2622,7 +2622,7 @@ end
 
 function Alts:AddToUnitPopupMenu()
 	if not self.db.profile.addMenuItems then return end
-	_G.UnitPopupButtons["ALTS_SET_MAIN"] = {text = L["Set Main"], dist = 0}
+	_G.UnitPopupButtons["ALTS_SET_MAIN"] = { text = L["Set Main"] }
 	for menu, enabled in pairs(self.db.profile.menusToModify) do
 		if menu and enabled then
 			tinsert(_G.UnitPopupMenus[menu],
