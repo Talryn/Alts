@@ -1027,7 +1027,7 @@ function Alts:OnInitialize()
 	-- Create the LDB launcher
 	altsLDB = LDB:NewDataObject("Alts",{
 		type = "launcher",
-		icon = "Interface\\Icons\\Achievement_Character_Human_Male.blp",
+		icon = "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend.blp",
 		OnClick = function(clickedframe, button)
     		if button == "RightButton" then
     			local optionsFrame = _G.InterfaceOptionsFrame
