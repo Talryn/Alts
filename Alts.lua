@@ -265,7 +265,7 @@ end
 function Alts:AddMessage(frame, text, ...)
     -- If we are monitoring chat and the message is text then try to rewrite it.
     if monitor and text and _G.type(text) == "string" then
-        text = text:gsub("(|Hplayer:([^:]+).-|h.-|h)", AddMainNameForChat)
+        text = text:gsub("(|Hplayer:([^:%]]+).-|h.-|h)", AddMainNameForChat)
     end
     return self.hooks[frame].AddMessage(frame, text, ...)
 end
@@ -1577,7 +1577,7 @@ function Alts:ShowExportFrame(exportFunc)
 end
 
 function Alts:CreateAddAltFrame()
-	local addalt = _G.CreateFrame("Frame", "Alts_AddAltWindow", _G.UIParent)
+	local addalt = _G.CreateFrame("Frame", "Alts_AddAltWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	addalt:SetFrameStrata("DIALOG")
 	addalt:SetToplevel(true)
 	addalt:SetWidth(400)
@@ -1665,7 +1665,7 @@ function Alts:CreateAddAltFrame()
 end
 
 function Alts:CreateAddMainFrame()
-	local addmain = _G.CreateFrame("Frame", "Alts_AddMainWindow", _G.UIParent)
+	local addmain = _G.CreateFrame("Frame", "Alts_AddMainWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	addmain:SetFrameStrata("DIALOG")
 	addmain:SetToplevel(true)
 	addmain:SetWidth(400)
@@ -1791,7 +1791,7 @@ function Alts:CreateAddMainFrame()
 end
 
 function Alts:CreateAltsFrame()
-	local altswindow = _G.CreateFrame("Frame", "Alts_AltsWindow", _G.UIParent)
+	local altswindow = _G.CreateFrame("Frame", "Alts_AltsWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	altswindow:SetFrameStrata("DIALOG")
 	altswindow:SetToplevel(true)
 	altswindow:SetWidth(630)
@@ -2140,7 +2140,7 @@ function Alts:GuildExportHandler(input)
 end
 
 function Alts:CreateEditAltsFrame()
-	local editaltswindow = _G.CreateFrame("Frame", "Alts_EditAltsWindow", _G.UIParent)
+	local editaltswindow = _G.CreateFrame("Frame", "Alts_EditAltsWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	editaltswindow:SetFrameStrata("DIALOG")
 	editaltswindow:SetToplevel(true)
 	editaltswindow:SetWidth(400)
@@ -2257,7 +2257,7 @@ function Alts:CreateEditAltsFrame()
 end
 
 function Alts:CreateSetMainFrame()
-	local setmain = _G.CreateFrame("Frame", "Alts_SetMainWindow", _G.UIParent)
+	local setmain = _G.CreateFrame("Frame", "Alts_SetMainWindow", _G.UIParentBackdropTemplateMixin and "BackdropTemplate")
 	setmain:SetFrameStrata("DIALOG")
 	setmain:SetToplevel(true)
 	setmain:SetWidth(400)
@@ -2338,7 +2338,7 @@ function Alts:CreateSetMainFrame()
 end
 
 function Alts:CreateConfirmDeleteFrame()
-	local deletewindow = _G.CreateFrame("Frame", "Alts_ConfirmDeleteWindow", _G.UIParent)
+	local deletewindow = _G.CreateFrame("Frame", "Alts_ConfirmDeleteWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	deletewindow:SetFrameStrata("DIALOG")
 	deletewindow:SetToplevel(true)
 	deletewindow:SetWidth(400)
@@ -2416,7 +2416,7 @@ function Alts:CreateConfirmDeleteFrame()
 end
 
 function Alts:CreateConfirmMainDeleteFrame()
-	local deletewindow = _G.CreateFrame("Frame", "Alts_ConfirmMainDeleteWindow", _G.UIParent)
+	local deletewindow = _G.CreateFrame("Frame", "Alts_ConfirmMainDeleteWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	deletewindow:SetFrameStrata("DIALOG")
 	deletewindow:SetToplevel(true)
 	deletewindow:SetWidth(400)
