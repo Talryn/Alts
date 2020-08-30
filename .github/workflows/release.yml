@@ -44,6 +44,6 @@ jobs:
       # another example where we supply additional arguments, this example is specifically to release
       # for the Classic version of the game
       - name: Package and release for Classic
-        uses: BigWigsMods/packager@master
+        uses: BigWigsMods/packager@064e524
         with:
           args: -g 1.13.5 -w 0
