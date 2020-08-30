@@ -1352,7 +1352,7 @@ end
 local GuildExportFrame = nil
 function Alts:ShowGuildExportFrame()
 	-- Request an update on the guild roster
-	if C_GuildInfo then
+	if C_GuildInfo and C_GuildInfo.GuildRoster then
 		C_GuildInfo.GuildRoster()
 	else
 		_G.GuildRoster()
@@ -2560,7 +2560,7 @@ function Alts:OnEnable()
 
 	-- Register event and call roster to import guild members and alts
 	self:RegisterEvent("GUILD_ROSTER_UPDATE")
-	if C_GuildInfo then
+	if C_GuildInfo and C_GuildInfo.GuildRoster then
 		C_GuildInfo.GuildRoster()
 	else
 		_G.GuildRoster()
