@@ -1352,9 +1352,13 @@ end
 local GuildExportFrame = nil
 function Alts:ShowGuildExportFrame()
 	-- Request an update on the guild roster
-	_G.GuildRoster()
+	if C_GuildInfo then
+		C_GuildInfo.GuildRoster()
+	else
+		_G.GuildRoster()
+	end
 
-    if GuildExportFrame then return end
+	if GuildExportFrame then return end
 
 	local frame = AGU:Create("Frame")
 	frame:SetTitle(L["Guild Export"])
@@ -2556,7 +2560,11 @@ function Alts:OnEnable()
 
 	-- Register event and call roster to import guild members and alts
 	self:RegisterEvent("GUILD_ROSTER_UPDATE")
-	_G.GuildRoster()
+	if C_GuildInfo then
+		C_GuildInfo.GuildRoster()
+	else
+		_G.GuildRoster()
+	end
 
 	-- Register event to update friends data.
 	self:RegisterEvent("FRIENDLIST_UPDATE")

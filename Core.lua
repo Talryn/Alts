@@ -26,8 +26,7 @@ addon.addonVersion = cleanupVersion("@project-version@")
 
 addon.CURRENT_BUILD, addon.CURRENT_INTERNAL, 
     addon.CURRENT_BUILD_DATE, addon.CURRENT_UI_VERSION = _G.GetBuildInfo()
-addon.WoD = addon.CURRENT_UI_VERSION >= 60000
-addon.Legion = addon.CURRENT_UI_VERSION >= 70000
+addon.Shadowlands = addon.CURRENT_UI_VERSION >= 90000
 
 addon.modules = {}
 function addon:RegisterModule(name, obj)

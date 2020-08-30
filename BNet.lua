@@ -118,7 +118,7 @@ function module:UpdateBNetData()
 end
 
 function module:CreateBrowser()
-	local frame = _G.CreateFrame("Frame", "Alts_BnetBrowserWindow", _G.UIParent)
+	local frame = _G.CreateFrame("Frame", "Alts_BnetBrowserWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	frame:SetFrameStrata("DIALOG")
 	frame:SetToplevel(true)
 	frame:SetWidth(630)
