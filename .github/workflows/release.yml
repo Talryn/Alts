@@ -39,7 +39,7 @@ jobs:
 
       # once cloned, we just run the GitHub Action for the packager project
       - name: Package and release
-        uses: BigWigsMods/packager@master
+        uses: BigWigsMods/packager@064e524
 
       # another example where we supply additional arguments, this example is specifically to release
       # for the Classic version of the game
