@@ -39,11 +39,11 @@ jobs:
 
       # once cloned, we just run the GitHub Action for the packager project
       - name: Package and release
-        uses: BigWigsMods/packager@064e524
+        uses: Talryn/packager@master
 
       # another example where we supply additional arguments, this example is specifically to release
       # for the Classic version of the game
       - name: Package and release for Classic
-        uses: BigWigsMods/packager@064e524
+        uses: Talryn/packager@master
         with:
           args: -g 1.13.5 -w 0
