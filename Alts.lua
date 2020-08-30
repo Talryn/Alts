@@ -2257,7 +2257,7 @@ function Alts:CreateEditAltsFrame()
 end
 
 function Alts:CreateSetMainFrame()
-	local setmain = _G.CreateFrame("Frame", "Alts_SetMainWindow", _G.UIParentBackdropTemplateMixin and "BackdropTemplate")
+	local setmain = _G.CreateFrame("Frame", "Alts_SetMainWindow", _G.UIParent, BackdropTemplateMixin and "BackdropTemplate")
 	setmain:SetFrameStrata("DIALOG")
 	setmain:SetToplevel(true)
 	setmain:SetWidth(400)
