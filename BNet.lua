@@ -33,6 +33,7 @@ end
 function module:OnEnable()
 	self.eventFrame = self.eventFrame or _G.CreateFrame("frame")
 	self.eventFrame:RegisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
+	self.eventFrame:RegisterEvent("BN_FRIEND_INFO_CHANGED")
 	self.eventFrame:SetScript("OnEvent", self.EventHandler)
 	self.enabled = true
 	local frame = module.browserFrame
@@ -42,26 +43,22 @@ end
 function module:OnDisable()
 	if self.eventFrame then
 		self.eventFrame:UnregisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
+		self.eventFrame:UnregisterEvent("BN_FRIEND_INFO_CHANGED")
 		self.eventFrame:SetScript("OnEvent", nil)
 	end
 	self.enabled = false
 end
 
-function module:AddBNetLink(accountInfo)
-	if not (accountInfo and accountInfo.gameAccountInfo) then return end
+function module:AddBNetLink(info)
+	if not info then return end
 
-	local battleTag = accountInfo.battleTag
-	local isBattleTagFriend = accountInfo.isBattleTagFriend
-	local characterName = accountInfo.gameAccountInfo.characterName
-	local realmName = accountInfo.gameAccountInfo.realmName
-	local client = accountInfo.gameAccountInfo.clientProgram
-
-	if isBattleTagFriend and battleTag then
-		if characterName and realmName and client == _G.BNET_CLIENT_WOW then
-			AltsDB:AddBNetLink(battleTag, characterName, realmName)
+	if info.isBattleTagFriend and info.battleTag then
+		if info.characterName and info.realmName and info.client == _G.BNET_CLIENT_WOW then
+			AltsDB:AddBNetLink(info.battleTag, info.characterName, info.realmName)
 			if addon.db.profile.debug then
 				local fmt = "Discovered %s: %s"
-				Alts:Print(fmt:format(battleTag, AltsDB:FormatNameWithRealm(characterName, realmName)))
+				Alts:Print(fmt:format(info.battleTag, 
+					AltsDB:FormatNameWithRealm(info.characterName, info.realmName)))
 			end
 		end
 	end
@@ -72,28 +69,70 @@ function module.FriendListUpdate()
 end
 
 function module:UpdateBNetFriends()
-	for i = 1, _G.BNGetNumFriends() do
-		self:AddBNetLink(C_BattleNet.GetFriendAccountInfo(i))
+	for id = 1, _G.BNGetNumFriends() do
+		self:AddBNetLink(self:GetBNetAccountInfo(id))
 	end
 end
 
 function module:ProcessBNetFriend(id)
 	if id then
-		self:AddBNetLink(C_BattleNet.GetFriendAccountInfo(id))
-	else
-		if addon.db.profile.debug then
-			Alts:Print("Bad message: ".._G.tostring(id))
-		end
+		self:AddBNetLink(self:GetBNetAccountInfo(id))
 	end
+end
+
+function module:GetBNetAccountInfo(id)
+	local info
+	if addon.Classic then
+		return self:ConvertBNetAccountInfoClassic(_G.BNGetFriendInfo(id))
+	else
+		info = C_BattleNet.GetFriendAccountInfo(id)
+		return self:ConvertBNetAccountInfo(info)
+	end
+end
+
+function module:ConvertBNetAccountInfoClassic(...)
+	local bnetIDAccount, accountName, battleTag, isBattleTagFriend, characterName, 
+		bnetIDGameAccount, client, isOnline, lastOnline, isAFK, isDND, messageText, noteText, 
+		isRIDFriend, broadcastTime, canSoR = ...
+
+	if not (isBattleTagFriend and battleTag) then return nil end
+
+	local _, characterName, client, realmName = _G.BNGetGameAccountInfo(bnetIDGameAccount or bnetIDAccount)
+
+	return {
+		battleTag = battleTag,
+		isBattleTagFriend = isBattleTagFriend,
+		characterName = characterName,
+		realmName = realmName,
+		client = client
+	}		
+end
+
+function module:ConvertBNetAccountInfo(info)
+	if not (info and info.gameAccountInfo) then return nil end
+
+	return {
+		battleTag = info.battleTag,
+		isBattleTagFriend = info.isBattleTagFriend,
+		characterName = info.gameAccountInfo.characterName,
+		realmName = info.gameAccountInfo.realmName,
+		client = info.gameAccountInfo.clientProgram
+	}	
 end
 
 function module.EventHandler(frame, event, ...)
 	if event == "BN_FRIEND_ACCOUNT_ONLINE" then
 		module:BN_FRIEND_ACCOUNT_ONLINE(event, ...)
+	elseif event == "BN_FRIEND_INFO_CHANGED" then
+		module:BN_FRIEND_INFO_CHANGED(event, ...)
 	end
 end
 
 function module:BN_FRIEND_ACCOUNT_ONLINE(event, message)
+	self:ProcessBNetFriend(message)
+end
+
+function module:BN_FRIEND_INFO_CHANGED(event, message, ...)
 	self:ProcessBNetFriend(message)
 end
 
