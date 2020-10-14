@@ -47,13 +47,16 @@ function module:OnDisable()
 	self.enabled = false
 end
 
-function module:AddBNetLink(...)
-	local bnetIDAccount, accountName, battleTag, isBattleTag, characterName, bnetIDGameAccount, client, 
-		isOnline, lastOnline, isAFK, isDND, messageText, noteText, 
-		isRIDFriend, broadcastTime, canSoR = ...
+function module:AddBNetLink(accountInfo)
+	if not (accountInfo and accountInfo.gameAccountInfo) then return end
 
-	if isBattleTag and battleTag then
-		local _, characterName, client, realmName = _G.BNGetGameAccountInfo(bnetIDGameAccount or bnetIDAccount)
+	local battleTag = accountInfo.battleTag
+	local isBattleTagFriend = accountInfo.isBattleTagFriend
+	local characterName = accountInfo.gameAccountInfo.characterName
+	local realmName = accountInfo.gameAccountInfo.realmName
+	local client = accountInfo.gameAccountInfo.clientProgram
+
+	if isBattleTagFriend and battleTag then
 		if characterName and realmName and client == _G.BNET_CLIENT_WOW then
 			AltsDB:AddBNetLink(battleTag, characterName, realmName)
 			if addon.db.profile.debug then
@@ -70,16 +73,16 @@ end
 
 function module:UpdateBNetFriends()
 	for i = 1, _G.BNGetNumFriends() do
-		self:AddBNetLink(_G.BNGetFriendInfo(i))
+		self:AddBNetLink(C_BattleNet.GetFriendAccountInfo(i))
 	end
 end
 
-function module:ProcessBNetFriend(bnetIDAccount)
-	if bnetIDAccount then
-		self:AddBNetLink(_G.BNGetFriendInfoByID(bnetIDAccount))
+function module:ProcessBNetFriend(id)
+	if id then
+		self:AddBNetLink(C_BattleNet.GetFriendAccountInfo(id))
 	else
 		if addon.db.profile.debug then
-			Alts:Print("Bad message: ".._G.tostring(presenceId))
+			Alts:Print("Bad message: ".._G.tostring(id))
 		end
 	end
 end
