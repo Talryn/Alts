@@ -49,16 +49,19 @@ function module:OnDisable()
 	self.enabled = false
 end
 
-function module:AddBNetLink(info)
+function module:AddBNetLink(info, report)
 	if not info then return end
 
 	if info.isBattleTagFriend and info.battleTag then
 		if info.characterName and info.realmName and info.client == _G.BNET_CLIENT_WOW then
 			AltsDB:AddBNetLink(info.battleTag, info.characterName, info.realmName)
 			if addon.db.profile.debug then
-				local fmt = "Discovered %s: %s"
-				Alts:Print(fmt:format(info.battleTag, 
-					AltsDB:FormatNameWithRealm(info.characterName, info.realmName)))
+				local account = AltsDB:GetBNetAccount(info.battleTag)
+				local formattedName = AltsDB:FormatNameWithRealm(info.characterName, info.realmName)
+				if report or not (account and account[formattedName]) then
+					local fmt = "Discovered %s: %s"
+					Alts:Print(fmt:format(info.battleTag, formattedName))
+				end
 			end
 		end
 	end
@@ -70,13 +73,13 @@ end
 
 function module:UpdateBNetFriends()
 	for id = 1, _G.BNGetNumFriends() do
-		self:AddBNetLink(self:GetBNetAccountInfo(id))
+		self:AddBNetLink(self:GetBNetAccountInfo(id), true)
 	end
 end
 
 function module:ProcessBNetFriend(id)
 	if id then
-		self:AddBNetLink(self:GetBNetAccountInfo(id))
+		self:AddBNetLink(self:GetBNetAccountInfo(id), false)
 	end
 end
 
