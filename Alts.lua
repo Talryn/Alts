@@ -250,16 +250,18 @@ function Alts:SetMainChatColorCode()
 end
 
 local function AddMainNameForChat(message, name)
-    if name and #name > 0 and name ~= playerName then
-        local main = AltsDB:GetMainForAlt(name)
-        if main and #main > 0 then
-            local messageFmt = "%s (%s%s|r)"
-            return messageFmt:format(message, MainChatColor,
+		if not (name and #name > 0) then return end
+		local lowerName = name:lower()
+		if name ~= playerName and lowerName ~= playerFullNameLower then
+			local main = AltsDB:GetMainForAlt(name)
+			if main and #main > 0 then
+				local messageFmt = "%s (%s%s|r)"
+				return messageFmt:format(message, MainChatColor,
 							AltsDB:FormatUnitName(main, true))
-        end
-    end
+			end
+		end
 
-    return message
+		return message
 end
 
 function Alts:AddMessage(frame, text, ...)
@@ -1063,6 +1065,8 @@ function Alts:OnInitialize()
 	playerName = _G.UnitName("player")
 	playerRealm = _G.GetRealmName()
 	playerRealmAbbr = AltsDB:FormatRealmName(playerRealm)
+	playerFullName = AltsDB:FormatNameWithRealm(playerName, playerRealm)
+	playerFullNameLower = playerFullName:lower()
 
 	for name, obj in pairs(addon.modules) do
 		if obj and obj.OnInitialize then

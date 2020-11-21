@@ -88,6 +88,10 @@ local realmNames = {
     ["Tolbarad"] = "TolBarad",
     ["Twistingnether"] = "TwistingNether",
     ["Wyrmrestaccord"] = "WyrmrestAccord",
+		-- Classic realms
+		["Arcanite Reaper"] = "ArcaniteReaper",
+		["Deviate Delight"] = "DeviateDelight",
+		["Old Blanchy"] = "OldBlanchy",
 }
 
 local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
