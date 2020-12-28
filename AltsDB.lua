@@ -23,16 +23,17 @@ AltsDB.Mains = {}
 AltsDB.MainsBySource = {}
 
 local function ReverseTable(table)
-	local reverse = {}
-	if table then
-    	for k,v in pairs(table) do
-    		for i,a in ipairs(v) do
-    			reverse[a] = k
-    		end
-    	end
-	end
-	return reverse
+  local reverse = {}
+  if table then
+      for k,v in pairs(table) do
+        for i,a in ipairs(v) do
+          reverse[a] = k
+        end
+      end
+  end
+  return reverse
 end
+
 
 local realmNames = {
     ["Aeriepeak"] = "AeriePeak",
@@ -53,7 +54,7 @@ local realmNames = {
     ["Burninglegion"] = "BurningLegion",
     ["Cenarioncircle"] = "CenarionCircle",
     ["Darkiron"] = "DarkIron",
-	["Darkmoonfaire"] = "DarkmoonFaire",
+    ["Darkmoonfaire"] = "DarkmoonFaire",
     ["Dath'remar"] = "Dath'Remar",
     ["Demonsoul"] = "DemonSoul",
     ["Drak'tharon"] = "Drak'Tharon",
@@ -88,10 +89,18 @@ local realmNames = {
     ["Tolbarad"] = "TolBarad",
     ["Twistingnether"] = "TwistingNether",
     ["Wyrmrestaccord"] = "WyrmrestAccord",
-		-- Classic realms
-		["Arcanite Reaper"] = "ArcaniteReaper",
-		["Deviate Delight"] = "DeviateDelight",
-		["Old Blanchy"] = "OldBlanchy",
+    -- Classic realms
+    ["Arcanite Reaper"] = "ArcaniteReaper",
+    ["Deviate Delight"] = "DeviateDelight",
+    ["Old Blanchy"] = "OldBlanchy",
+    -- Classic EU realms
+    ["Pyrewood Village"] = "PyrewoodVillage",
+    ["Mirage Raceway"] = "MirageRaceway",
+    ["Zandalar Tribe"] = "ZandalarTribe",
+    ["Nethergarde Keep"] = "NethergardeKeep",
+    ["Dragon's Call"] = "Dragon'sCall",
+    ["Hydraxian Waterlords"] = "HydraxianWaterlords",
+    ["Ten Storms"] = "TenStorms",
 }
 
 local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
