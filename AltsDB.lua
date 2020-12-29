@@ -90,17 +90,17 @@ local realmNames = {
     ["Twistingnether"] = "TwistingNether",
     ["Wyrmrestaccord"] = "WyrmrestAccord",
     -- Classic realms
-    ["Arcanite Reaper"] = "ArcaniteReaper",
-    ["Deviate Delight"] = "DeviateDelight",
-    ["Old Blanchy"] = "OldBlanchy",
+    ["Arcanitereaper"] = "ArcaniteReaper",
+    ["Deviatedelight"] = "DeviateDelight",
+    ["Oldblanchy"] = "OldBlanchy",
     -- Classic EU realms
-    ["Pyrewood Village"] = "PyrewoodVillage",
-    ["Mirage Raceway"] = "MirageRaceway",
-    ["Zandalar Tribe"] = "ZandalarTribe",
-    ["Nethergarde Keep"] = "NethergardeKeep",
-    ["Dragon's Call"] = "Dragon'sCall",
-    ["Hydraxian Waterlords"] = "HydraxianWaterlords",
-    ["Ten Storms"] = "TenStorms",
+    ["Pyrewoodvillage"] = "PyrewoodVillage",
+    ["Mirageraceway"] = "MirageRaceway",
+    ["Zandalartribe"] = "ZandalarTribe",
+    ["Nethergardekeep"] = "NethergardeKeep",
+    ["Dragon'scall"] = "Dragon'sCall",
+    ["Hydraxianwaterlords"] = "HydraxianWaterlords",
+    ["Tenstorms"] = "TenStorms",
 }
 
 local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
