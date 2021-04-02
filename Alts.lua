@@ -55,6 +55,7 @@ local defaults = {
 		showInfoOnLogon = true,
 		showInfoOnWho = true,
 		showMainsInChat = true,
+		useMainNameColor = true,
 		mainNameColor = { r = 0.47, g = 0.47, b = 1.0, a = 1.0 },
 		singleLineChatDisplay = true,
 		singleLineTooltipDisplay = true,
@@ -246,7 +247,11 @@ end
 
 local MainChatColor = ""
 function Alts:SetMainChatColorCode()
-	MainChatColor = GetChatColorCode(self.db.profile.mainNameColor)
+	if self.db.profile.useMainNameColor then
+		MainChatColor = GetChatColorCode(self.db.profile.mainNameColor)
+	else
+		MainChatColor = ""
+	end
 end
 
 local function AddMainNameForChat(message, name)
@@ -702,39 +707,51 @@ function Alts:GetOptions()
                 			type = "header",
                 			name = L["Display Options"],
                 		},
-                	    showMainsInChat = {
-                            name = L["Main Names in Chat"],
-                            desc = L["MainNamesInChat_OptionDesc"],
-                            type = "toggle",
-														--width = "double",
-                            set = function(info, val)
-                                    self.db.profile.showMainsInChat = val
-                                    if val then
-                                        self:HookChatFrames()
-                                    else
-                                        self:UnhookChatFrames()
-                                    end
-                                end,
-                            get = function(info) return self.db.profile.showMainsInChat end,
-                			order = 105
-                        },
-	                	    mainsNameColor = {
-														order = 106,
-														name = L["Main Name Color"],
-														desc = L["MainNameColor_OptDesc"],
-														type = "color",
-														hasAlpha = false,
-														width = "double",
-														set = function(info, r, g, b, a)
-															local c = self.db.profile.mainNameColor
-															c.r, c.g, c.b, c.a = r, g, b, a
-															self:SetMainChatColorCode()
-														end,
-														get = function(info)
-															local c = self.db.profile.mainNameColor
-															return c.r, c.g, c.b, c.a
-														end,
-	                        },
+                	  showMainsInChat = {
+                      name = L["Main Names in Chat"],
+                      desc = L["MainNamesInChat_OptionDesc"],
+                      type = "toggle",
+											--width = "double",
+                      set = function(info, val)
+                        self.db.profile.showMainsInChat = val
+                        if val then
+                            self:HookChatFrames()
+                        else
+                            self:UnhookChatFrames()
+                        end
+                      end,
+                      get = function(info) return self.db.profile.showMainsInChat end,
+              				order = 105
+                    },
+										useMainsNameColor = {
+											order = 106,
+											name = L["Use Main Name Color"],
+											desc = L["UseMainNameColor_OptDesc"],
+											--width = "double",
+											type = "toggle",
+											set = function(info, val)
+												self.db.profile.useMainNameColor = val
+												self:SetMainChatColorCode()
+											end,
+											get = function(info) return self.db.profile.useMainNameColor end,
+										},
+              	    mainsNameColor = {
+												order = 107,
+												name = L["Main Name Color"],
+												desc = L["MainNameColor_OptDesc"],
+												type = "color",
+												hasAlpha = false,
+												--width = "double",
+												set = function(info, r, g, b, a)
+													local c = self.db.profile.mainNameColor
+													c.r, c.g, c.b, c.a = r, g, b, a
+													self:SetMainChatColorCode()
+												end,
+												get = function(info)
+													local c = self.db.profile.mainNameColor
+													return c.r, c.g, c.b, c.a
+												end,
+                      },
                 	    mainInTooltip = {
                             name = L["Main Name In Tooltips"],
                             desc = L["Toggles the display of the main name in tooltips"],
