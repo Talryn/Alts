@@ -4,7 +4,7 @@ name: Package and release
 # We need to let GitHub know _when_ we want to release, typically only when we create a new tag.
 # This will target only tags, and not all pushes to the master branch.
 # This part can be heavily customized to your liking, like targeting only tags that match a certain word,
-# other branches or even pullrequests.
+# other branches or even pull requests.
 on:
   push:
     tags:
