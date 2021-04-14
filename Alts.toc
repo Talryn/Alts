@@ -22,3 +22,5 @@ RealmData.lua
 AltsDB.lua
 Alts.lua
 BNet.lua
+Options.lua
+InterfaceMods.lua

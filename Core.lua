@@ -21,13 +21,22 @@ local function cleanupVersion(version)
 	return version
 end
 
+local function versionInRange(version, start, finish)
+	if _G.type(version) ~= "number" then return false end
+	local start = start or 0
+	local finish = finish or 100000000
+	if _G.type(start) ~= "number" or _G.type(finish) ~= "number" then return false end
+	return version >= start and version < finish
+  end
+  
 addon.addonTitle = _G.GetAddOnMetadata(ADDON_NAME,"Title")
 addon.addonVersion = cleanupVersion("@project-version@")
 
 addon.CURRENT_BUILD, addon.CURRENT_INTERNAL, 
     addon.CURRENT_BUILD_DATE, addon.CURRENT_UI_VERSION = _G.GetBuildInfo()
-addon.Classic = addon.CURRENT_UI_VERSION < 20000
-addon.Shadowlands = addon.CURRENT_UI_VERSION >= 90000
+addon.Classic = versionInRange(addon.CURRENT_UI_VERSION, 0, 20000)
+addon.TBC = versionInRange(addon.CURRENT_UI_VERSION, 20000, 30000)
+addon.Retail = versionInRange(addon.CURRENT_UI_VERSION, 90000)
 
 addon.modules = {}
 function addon:RegisterModule(name, obj)

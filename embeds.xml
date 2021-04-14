@@ -21,4 +21,5 @@ xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 <Script file="Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua" />
 <Script file="Libs\LibAlts-1.0\LibAlts-1.0.lua" />
 <Script file="Libs\LibJSON-1.0\LibJSON-1.0.lua" />
+<Script file="LibDropDownExtension.lua" />
 </Ui>
