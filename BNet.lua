@@ -85,7 +85,7 @@ end
 
 function module:GetBNetAccountInfo(id)
 	local info
-	if addon.Classic then
+	if addon.Classic or addon.TBC then
 		return self:ConvertBNetAccountInfoClassic(_G.BNGetFriendInfo(id))
 	else
 		info = C_BattleNet.GetFriendAccountInfo(id)
