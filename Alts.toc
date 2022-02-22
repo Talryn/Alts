@@ -1,6 +1,6 @@
 ## Interface: 90200
 ## Interface-Retail: 90200
-## Interface-Classic: 11401
+## Interface-Classic: 11402
 ## Interface-BCC: 20503
 ## Title: Alts
 ## Notes: Manages social information with a focus on main-alt associations.
