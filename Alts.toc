@@ -13,6 +13,7 @@
 ## SavedVariables: AltsDB
 ## X-Curse-Project-ID: 26572
 ## X-WoWI-ID: 24950
+## X-Wago-ID: RBKpnZNE
 
 embeds.xml
 
