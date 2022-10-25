@@ -222,7 +222,7 @@ function module:CreateBrowser()
 
 	local table = ScrollingTable:CreateST(cols, 15, nil, nil, frame);
 
-	local headertext = frame:CreateFontString("Alts_BNet_HeaderText", frame, "GameFontNormalLarge")
+	local headertext = frame:CreateFontString("Alts_BNet_HeaderText", "OVERLAY", "GameFontNormalLarge")
 	headertext:SetPoint("TOP", frame, "TOP", 0, -20)
 	headertext:SetText(L["Battle.net Alts"])
 
