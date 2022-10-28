@@ -287,7 +287,7 @@ function Alts:GetOptions()
                             type = "execute",
                             width = "normal",
                             func = function()
-                            	local optionsFrame = _G.InterfaceOptionsFrame
+                            	local optionsFrame = self.optionsFrame
                                 optionsFrame:Hide()
                                 self:GuildLogHandler("")
                             end,
@@ -304,7 +304,7 @@ function Alts:GetOptions()
                             type = "execute",
                             width = "normal",
                             func = function()
-                            	local optionsFrame = _G.InterfaceOptionsFrame
+                            	local optionsFrame = self.optionsFrame
                                 optionsFrame:Hide()
                                 self:GuildExportHandler("")
                             end,
