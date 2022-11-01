@@ -604,7 +604,7 @@ function Alts:OnInitialize()
     LibAlts.RegisterCallback(self, "LibAlts_RemoveSource", "RemoveSourceEvent")
 
     -- Register the options table
-    local displayName = _G.GetAddOnMetadata(ADDON_NAME, "Title")
+    local displayName = addon.addonTitle
 	local options = self:GetOptions()
     LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, options)
     self.optionsFrame = {}
