@@ -287,8 +287,7 @@ function Alts:GetOptions()
                             type = "execute",
                             width = "normal",
                             func = function()
-                            	local optionsFrame = self.optionsFrame
-                                optionsFrame:Hide()
+                                addon.HideGameOptions()
                                 self:GuildLogHandler("")
                             end,
                 			order = 120
@@ -304,8 +303,7 @@ function Alts:GetOptions()
                             type = "execute",
                             width = "normal",
                             func = function()
-                            	local optionsFrame = self.optionsFrame
-                                optionsFrame:Hide()
+                                addon.HideGameOptions()
                                 self:GuildExportHandler("")
                             end,
                 			order = 210
@@ -406,8 +404,13 @@ function Alts:GetOptions()
 end
 
 function Alts:ShowOptions()
-	_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Notes)
-	_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
+    if Settings and Settings.OpenToCategory and 
+        _G.type(Settings.OpenToCategory) == "function" then
+        Settings.OpenToCategory(addon.addonTitle)
+    else
+    	_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Notes)
+	    _G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
+    end
 end
 
 function Alts:InterfaceModsOptions()

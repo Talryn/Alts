@@ -643,10 +643,8 @@ function Alts:OnInitialize()
 		icon = "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend.blp",
 		OnClick = function(clickedframe, button)
     		if button == "RightButton" then
-    			local optionsFrame = self.optionsFrame
-
-    			if optionsFrame:IsVisible() then
-    				optionsFrame:Hide()
+    			if addon.IsGameOptionsVisible() then
+    				addon.HideGameOptions()
     			else
     			    self:HideAltsWindow()
     				self:ShowOptions()
@@ -655,8 +653,7 @@ function Alts:OnInitialize()
     			if self:IsVisible() then
     				self:HideAltsWindow()
     			else
-        			local optionsFrame = self.optionsFrame
-    			    optionsFrame:Hide()
+					addon.HideGameOptions()
     				self:AltsHandler("")
     			end
             end
@@ -1633,8 +1630,7 @@ function Alts:AltsHandler(input)
 	altsFrame.table:SortData()
 
     -- Hide the options frame if it is open.
-	local optionsFrame = self.optionsFrame
-    optionsFrame:Hide()
+	addon.HideGameOptions()
 
 	altsFrame:Show()
 	altsFrame:Raise()
