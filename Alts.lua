@@ -2150,6 +2150,10 @@ function Alts:AddMainName(main, alt)
 	addMainFrame.altname:SetText("")
 end
 
+local function OnTooltipSetUnit(tooltip, data, ...)
+	Alts:OnTooltipSetUnit(tooltip, data, ...)
+end
+
 function Alts:OnEnable()
 	AltsDB:OnEnable()
 
@@ -2157,8 +2161,12 @@ function Alts:OnEnable()
 
 	self:UpdateMatchMethods()
 
-	-- Hook the game tooltip so we can add character Notes
-	self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
+	-- Hook the game tooltip so we can add lines
+	if TooltipDataProcessor then
+		TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, OnTooltipSetUnit)
+	else
+		self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
+	end
 
 	-- Hook the friends frame tooltip
 	--self:HookScript("FriendsFrameTooltip_Show")
