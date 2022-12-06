@@ -85,6 +85,8 @@ local defaults = {
 		reportTo = "Chat",
 		uiModifications = {
 			["unitMenusSetMain"] = true,
+			["GuildRosterTooltip"] = true,
+			["CommunitiesTooltip"] = true,
 		},
 		-- Rules and config for matching alts
 		altMatching = {
@@ -2253,58 +2255,86 @@ function Alts:HideAltsWindow()
 	end
 end
 
+function Alts:SetupTooltip(tooltip, owner, anchor, spacer)
+	if not tooltip then return end
+
+	local anchorPoint = anchor or "ANCHOR_LEFT"
+
+	if tooltip:GetOwner() == nil and owner then
+		tooltip:SetOwner(owner, anchorPoint)
+	elseif spacer or spacer == nil then
+		tooltip:AddLine(" ")
+	end
+end
+
+function Alts:AddDataToTooltip(tooltip, owner, name, anchor, spacer)
+	if not (tooltip and name) then return false end
+
+	-- Check if a single line should be displayed for mains and alts
+	if addon.db.profile.singleLineTooltipDisplay then
+		local main = AltsDB:GetMainForAlt(name)
+		if main and #main > 0 then
+			local alts = { AltsDB:GetAlts(main) }
+
+			if alts and #alts > 0 then
+				local altList = AltsDB:FormatUnitList(", ", true, unpack(alts))
+				if altList and #altList > 0 then
+					if addon.db.profile.wrapTooltip then
+						altList = wrap(altList, addon.db.profile.wrapTooltipLength,"    ","", 4)
+					end
+					self:SetupTooltip(tooltip, owner, anchor, spacer)
+					tooltip:AddLine(YELLOW..AltsDB:FormatUnitName(main, true)..": "..WHITE..altList, 1, 1, 1, not addon.db.profile.wrapTooltip)
+					return true
+				end
+			end
+		end
+	end
+
+	local added = false
+
+	-- Check if it's a main
+	if addon.db.profile.showMainInTooltip then
+		local main = AltsDB:GetMainForAlt(name)
+		if main and #main > 0 then
+			if not added then
+				self:SetupTooltip(tooltip, owner, anchor, not added)
+				added = true
+			end
+			tooltip:AddLine(YELLOW..L["Main: "]..WHITE..AltsDB:FormatUnitName(main, true), 1, 1, 1, true)
+		end
+	end
+	-- Check if it's an alt
+	if self.db.profile.showAltsInTooltip then
+		local main, alts = AltsDB:GetAltsForMain(name, true)
+		if alts and #alts > 0 then
+			local altList = AltsDB:FormatUnitList(", ", true, unpack(alts))
+			if altList and #altList > 0 then
+				if addon.db.profile.wrapTooltip then
+					altList = wrap(altList, addon.db.profile.wrapTooltipLength,"    ","", 4)
+				end
+				if not added then
+					self:SetupTooltip(tooltip, owner, anchor, not added)
+					added = true
+				end
+				tooltip:AddLine(YELLOW..L["Alts: "]..WHITE..altList, 1, 1, 1, not addon.db.profile.wrapTooltip)
+			end
+		end
+	end
+	return added
+end
+
 function Alts:OnTooltipSetUnit(tooltip, ...)
     if not self.db.profile.showMainInTooltip and
         not self.db.profile.showAltsInTooltip then return end
 
     local name, unitid = tooltip:GetUnit()
 
-	-- If the unit exists and is a player then check if there is a note for it.
+	-- If the unit exists and is a player then check if for main/alts.
     if _G.UnitExists(unitid) and _G.UnitIsPlayer(unitid) then
 		-- Get the unit's name including the realm name
 		local nameString = _G.GetUnitName(unitid, true)
         if not nameString then return end
-
-        -- Check if a single line should be displayed for mains and alts
-        if self.db.profile.singleLineTooltipDisplay then
-            local main = AltsDB:GetMainForAlt(nameString)
-            if main and #main > 0 then
-                local alts = { AltsDB:GetAlts(main) }
-
-                if alts and #alts > 0 then
-                    local altList = AltsDB:FormatUnitList(", ", true, unpack(alts))
-                    if altList and #altList > 0 then
-                        if self.db.profile.wrapTooltip then
-                            altList = wrap(altList,self.db.profile.wrapTooltipLength,"    ","", 4)
-                        end
-            	        tooltip:AddLine(YELLOW..AltsDB:FormatUnitName(main, true)..": "..WHITE..altList, 1, 1, 1, not self.db.profile.wrapTooltip)
-                        return
-            	    end
-        	    end
-            end
-        end
-
-        -- Check if it's a main
-        if self.db.profile.showMainInTooltip then
-            local main = AltsDB:GetMainForAlt(nameString)
-            if main and #main > 0 then
-            	tooltip:AddLine(YELLOW..L["Main: "]..WHITE..AltsDB:FormatUnitName(main, true), 1, 1, 1, true)
-            end
-        end
-
-        -- Check if it's an alt
-        if self.db.profile.showAltsInTooltip then
-			local main, alts = AltsDB:GetAltsForMain(nameString, true)
-            if alts and #alts > 0 then
-                local altList = AltsDB:FormatUnitList(", ", true, unpack(alts))
-                if altList and #altList > 0 then
-        			if self.db.profile.wrapTooltip then
-        			    altList = wrap(altList,self.db.profile.wrapTooltipLength,"    ","", 4)
-        			end
-                	tooltip:AddLine(YELLOW..L["Alts: "]..WHITE..altList, 1, 1, 1, not self.db.profile.wrapTooltip)
-                end
-            end
-        end
+		self:AddDataToTooltip(tooltip, nil, name)
     end
 end
 

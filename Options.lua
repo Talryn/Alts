@@ -430,6 +430,22 @@ function Alts:InterfaceModsOptions()
     -- Options for current retail version.
     local baseOrderCurrent = 600
     local currentOptions = {
+        guildRosterTooltips = {
+            name = L["Guild Roster Tooltip"],
+            desc = L["GuildRosterTooltip_Opt"],
+            type = "toggle",
+            set = function(info,val) self.db.profile.uiModifications.GuildRosterTooltip = val end,
+            get = function(info) return self.db.profile.uiModifications.GuildRosterTooltip end,
+            order = baseOrderCurrent + 10
+        },
+        communitiesTooltips = {
+            name = L["Communities Tooltips"],
+            desc = L["CommunitiesTooltips_Opt"],
+            type = "toggle",
+            set = function(info,val) self.db.profile.uiModifications.CommunitiesTooltip = val end,
+            get = function(info) return self.db.profile.uiModifications.CommunitiesTooltip end,
+            order = baseOrderCurrent + 20
+        },
     }
   
     -- Options for Classic only.
