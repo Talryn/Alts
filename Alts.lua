@@ -589,6 +589,28 @@ function Alts:AltsDebugHandler(input)
 	end
 end
 
+function Alts:OnClickIcon(button)
+	if button == "RightButton" then
+		if addon.IsGameOptionsVisible() then
+			addon.HideGameOptions()
+		else
+			self:HideAltsWindow()
+			self:ShowOptions()
+		end
+	elseif button == "LeftButton" then
+		if self:IsVisible() then
+			self:HideAltsWindow()
+		else
+			addon.HideGameOptions()
+			self:AltsHandler("")
+		end
+	end
+end
+
+function Alts_OnAddonCompartmentClick(addonName, buttonName)
+	Alts:OnClickIcon(buttonName)
+end
+
 function Alts:OnInitialize()
     -- Called when the addon is loaded
     self.db = LibStub("AceDB-3.0"):New("AltsDB", defaults, "Default")
@@ -644,21 +666,7 @@ function Alts:OnInitialize()
 		type = "launcher",
 		icon = "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend.blp",
 		OnClick = function(clickedframe, button)
-    		if button == "RightButton" then
-    			if addon.IsGameOptionsVisible() then
-    				addon.HideGameOptions()
-    			else
-    			    self:HideAltsWindow()
-    				self:ShowOptions()
-    			end
-    		elseif button == "LeftButton" then
-    			if self:IsVisible() then
-    				self:HideAltsWindow()
-    			else
-					addon.HideGameOptions()
-    				self:AltsHandler("")
-    			end
-            end
+			self:OnClickIcon(button)
 		end,
 		OnTooltipShow = function(tooltip)
 			if tooltip and tooltip.AddLine then
