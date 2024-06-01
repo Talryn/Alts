@@ -2172,7 +2172,8 @@ function Alts:OnEnable()
 	self:UpdateMatchMethods()
 
 	-- Hook the game tooltip so we can add lines
-	if TooltipDataProcessor then
+ 	-- If the new tooltip API is present it, use it, otherwise use the older one.
+ 	if C_TooltipInfo and TooltipDataProcessor then
 		TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, OnTooltipSetUnit)
 	else
 		self:HookScript(_G.GameTooltip, "OnTooltipSetUnit")
