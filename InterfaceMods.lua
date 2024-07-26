@@ -4,6 +4,7 @@ local ADDON_NAME, addon = ...
 local pairs = _G.pairs
 local ipairs = _G.ipairs
 local type = _G.type
+local strsub = _G.strsub
 
 local wrap = addon.wrap
 local Colors = addon.Colors
@@ -13,6 +14,14 @@ local GetRatingColor = addon.GetRatingColor
 local AltsDB = addon.AltsDB
 local Alts = _G.LibStub("AceAddon-3.0"):GetAddon(addon.addonName)
 local L = LibStub("AceLocale-3.0"):GetLocale(addon.addonName, true)
+
+function addon.GetMouseFocusFrame()
+	if _G.GetMouseFocus then
+		return _G.GetMouseFocus()
+	elseif _G.GetMouseFoci then
+		return _G.GetMouseFoci()
+	end
+end
 
 local ScrollBoxUtil = {}
 function ScrollBoxUtil:OnViewFramesChanged(scrollBox, callback)
@@ -205,10 +214,58 @@ do
     ---@type LibDropDownExtension
     local LibDropDownExtension = LibStub and LibStub:GetLibrary("LibDropDownExtension-1.0", true)
 
-	function module:Setup()
-		if not LibDropDownExtension then return end
-		if not IsEnabled() then return end
+	function module:HasMenu()
+		return Menu and Menu.ModifyMenu
+	end
 
+	local function GetNameForContext(contextData)
+		local contextName = contextData.name
+		if not contextName then return nil end
+		if strsub(contextName, 1, 1) == "|" then
+			return nil
+		else
+			local name = AltsDB:FormatNameWithRealm(contextData.name, contextData.server)
+			return name
+		end
+	end
+
+	local function IsValidName(contextData)
+		return contextData.name and strsub(contextData.name, 1, 1) ~= "|"
+	end
+
+	-- contextData.accountInfo.battleTag
+	function module:MenuHandler(owner, rootDescription, contextData)
+		if not IsValidName(contextData) then return end
+		rootDescription:CreateDivider();
+		rootDescription:CreateTitle(addon.addonTitle);
+		rootDescription:CreateButton(L["Set Main"], function()
+			local name = GetNameForContext(contextData)
+			if name then
+				Alts:SetMainHandler(name)
+			end
+		end)
+	end
+
+	function module:AddItemsWithMenu()
+		if not self:HasMenu() then return end
+
+		-- Find via /run Menu.PrintOpenMenuTags()
+		local menuTags = {
+			["MENU_UNIT_PLAYER"] = true,
+			["MENU_UNIT_PARTY"] = true,
+			["MENU_UNIT_RAID_PLAYER"] = true,
+			["MENU_UNIT_FRIEND"] = true,
+			["MENU_UNIT_COMMUNITIES_GUILD_MEMBER"] = true,
+			["MENU_UNIT_COMMUNITIES_MEMBER"] = true,
+		}
+
+		for tag, enabled in pairs(menuTags) do
+			Menu.ModifyMenu(tag, GenerateClosure(self.MenuHandler, self))
+		end
+	end
+
+	function module:AddItemsWithDDE()
+		if not LibDropDownExtension then return end
 		self.unitOptions = {
 			{
 				text = L["Set Main"],
@@ -224,6 +281,16 @@ do
 		end
 
 		LibDropDownExtension:RegisterEvent("OnShow OnHide", OnToggle, 1, self)
+	end
+
+	function module:Setup()
+		if not IsEnabled() then return end
+
+		if self:HasMenu() then
+			self:AddItemsWithMenu()
+		else
+			self:AddItemsWithDDE()
+		end
 		self.enabled = true
 	end
 
@@ -262,7 +329,7 @@ do
 	local function OnScroll()
     	if not IsEnabled() then return end
 		GameTooltip:Hide()
-		pcall(_G.GetMouseFocus(), "OnEnter")
+		pcall(addon.GetMouseFocusFrame(), "OnEnter")
 	end
 
 	function module:Setup()
@@ -329,7 +396,7 @@ do
 	local function OnScroll()
 	    if not IsEnabled() then return end
 		GameTooltip:Hide()
-		pcall(_G.GetMouseFocus(), "OnEnter")
+		pcall(addon.GetMouseFocusFrame(), "OnEnter")
 	end
 
 	local hooked = {}
