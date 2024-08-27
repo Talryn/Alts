@@ -201,7 +201,6 @@ local defaults = {
 local guildUpdateTimer = nil
 local combat = false
 local monitor = true
-local options
 local playerName = ""
 local playerRealm = ""
 local playerRealmAbbr = ""
@@ -629,8 +628,10 @@ function Alts:OnInitialize()
 
     -- Register the options table
     local displayName = addon.addonTitle
-	local options = self:GetOptions()
-    LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, options)
+	if not addon.options then
+		addon.options = self:GetOptions()
+	end
+    LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, addon.options)
     self.optionsFrame = {}
     local ACD = LibStub("AceConfigDialog-3.0")
 	self.optionsFrame.Main = ACD:AddToBlizOptions(
@@ -646,7 +647,7 @@ function Alts:OnInitialize()
 	self.optionsFrame.Formats = ACD:AddToBlizOptions(
 	    displayName, L["Note Formats"], displayName, "formats")
 	ACD:AddToBlizOptions(
-	    displayName, options.args.profile.name, displayName, "profile")
+	    displayName, addon.options.args.profile.name, displayName, "profile")
 
 	self:RegisterChatCommand("alts", "AltsHandler")
 	self:RegisterChatCommand("altsdebug", "AltsDebugHandler")
