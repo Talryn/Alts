@@ -1,4 +1,3 @@
-local _G = getfenv(0)
 local ADDON_NAME, addon = ...
 
 local pairs = _G.pairs
@@ -434,33 +433,33 @@ do
         end
 
         ScrollBoxUtil:OnViewFramesChanged(
-        _G.CommunitiesFrame.MemberList.ListScrollFrame or _G.CommunitiesFrame.MemberList.ScrollBox, HookFrames)
+            _G.CommunitiesFrame.MemberList.ListScrollFrame or _G.CommunitiesFrame.MemberList.ScrollBox, HookFrames)
         ScrollBoxUtil:OnViewScrollChanged(
-        _G.CommunitiesFrame.MemberList.ListScrollFrame or _G.CommunitiesFrame.MemberList.ScrollBox, OnScroll)
+            _G.CommunitiesFrame.MemberList.ListScrollFrame or _G.CommunitiesFrame.MemberList.ScrollBox, OnScroll)
         ScrollBoxUtil:OnViewFramesChanged(
-        _G.ClubFinderGuildFinderFrame.CommunityCards.ListScrollFrame or
-        _G.ClubFinderGuildFinderFrame.CommunityCards.ScrollBox, HookFrames)
+            _G.ClubFinderGuildFinderFrame.CommunityCards.ListScrollFrame or
+            _G.ClubFinderGuildFinderFrame.CommunityCards.ScrollBox, HookFrames)
         ScrollBoxUtil:OnViewScrollChanged(
-        _G.ClubFinderGuildFinderFrame.CommunityCards.ListScrollFrame or
-        _G.ClubFinderGuildFinderFrame.CommunityCards.ScrollBox, OnScroll)
+            _G.ClubFinderGuildFinderFrame.CommunityCards.ListScrollFrame or
+            _G.ClubFinderGuildFinderFrame.CommunityCards.ScrollBox, OnScroll)
         ScrollBoxUtil:OnViewFramesChanged(
-        _G.ClubFinderGuildFinderFrame.PendingCommunityCards.ListScrollFrame or
-        _G.ClubFinderGuildFinderFrame.PendingCommunityCards.ScrollBox, HookFrames)
+            _G.ClubFinderGuildFinderFrame.PendingCommunityCards.ListScrollFrame or
+            _G.ClubFinderGuildFinderFrame.PendingCommunityCards.ScrollBox, HookFrames)
         ScrollBoxUtil:OnViewScrollChanged(
-        _G.ClubFinderGuildFinderFrame.PendingCommunityCards.ListScrollFrame or
-        _G.ClubFinderGuildFinderFrame.PendingCommunityCards.ScrollBox, OnScroll)
+            _G.ClubFinderGuildFinderFrame.PendingCommunityCards.ListScrollFrame or
+            _G.ClubFinderGuildFinderFrame.PendingCommunityCards.ScrollBox, OnScroll)
         ScrollBoxUtil:OnViewFramesChanged(
-        _G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ListScrollFrame or
-        _G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ScrollBox, HookFrames)
+            _G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ListScrollFrame or
+            _G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ScrollBox, HookFrames)
         ScrollBoxUtil:OnViewScrollChanged(
-        _G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ListScrollFrame or
-        _G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ScrollBox, OnScroll)
+            _G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ListScrollFrame or
+            _G.ClubFinderCommunityAndGuildFinderFrame.CommunityCards.ScrollBox, OnScroll)
         ScrollBoxUtil:OnViewFramesChanged(
-        _G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ListScrollFrame or
-        _G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ScrollBox, HookFrames)
+            _G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ListScrollFrame or
+            _G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ScrollBox, HookFrames)
         ScrollBoxUtil:OnViewScrollChanged(
-        _G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ListScrollFrame or
-        _G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ScrollBox, OnScroll)
+            _G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ListScrollFrame or
+            _G.ClubFinderCommunityAndGuildFinderFrame.PendingCommunityCards.ScrollBox, OnScroll)
         hooksecurefunc(_G.ClubFinderGuildFinderFrame.GuildCards, "RefreshLayout", OnRefreshLayout)
         hooksecurefunc(_G.ClubFinderGuildFinderFrame.PendingGuildCards, "RefreshLayout", OnRefreshLayout)
         hooksecurefunc(_G.ClubFinderCommunityAndGuildFinderFrame.GuildCards, "RefreshLayout", OnRefreshLayout)

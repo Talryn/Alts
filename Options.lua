@@ -1,4 +1,3 @@
-local _G = getfenv(0)
 local ADDON_NAME, addon = ...
 
 local Alts = LibStub("AceAddon-3.0"):GetAddon(addon.addonName)
@@ -209,7 +208,7 @@ function Alts:GetOptions()
                     singleLineChatDisplay = {
                         name = L["Single Line for Chat"],
                         desc = L
-                        ["Toggles whether the main and alt information is on one line or separate lines in the chat window."],
+                            ["Toggles whether the main and alt information is on one line or separate lines in the chat window."],
                         type = "toggle",
                         set = function(info, val) self.db.profile.singleLineChatDisplay = val end,
                         get = function(info) return self.db.profile.singleLineChatDisplay end,
@@ -218,7 +217,7 @@ function Alts:GetOptions()
                     singleLineTooltipDisplay = {
                         name = L["Single Line for Tooltip"],
                         desc = L
-                        ["Toggles whether the main and alt information is on one line or separate lines in tooltips."],
+                            ["Toggles whether the main and alt information is on one line or separate lines in tooltips."],
                         type = "toggle",
                         set = function(info, val) self.db.profile.singleLineTooltipDisplay = val end,
                         get = function(info) return self.db.profile.singleLineTooltipDisplay end,
