@@ -281,7 +281,8 @@ end
 local function NewCustomDropDownButton(cdropdown, button)
     local index = #cdropdown.buttons + 1
     ---@diagnostic disable-next-line: cast-local-type
-    button = button or CreateFrame("Button", cdropdown:GetName() .. "Button" .. index, cdropdown, "UIDropDownMenuButtonTemplate")
+    button = button or
+    CreateFrame("Button", cdropdown:GetName() .. "Button" .. index, cdropdown, "UIDropDownMenuButtonTemplate")
     button.order = nil
     button.option = nil
     button:SetID(index)
@@ -344,7 +345,8 @@ end
 ---@param dropdown DropDownList
 local function NewCustomDropDown(dropdown)
     ---@type CustomDropDown
-    local cdropdown = CreateFrame("Button", "LibDropDownExtensionCustomDropDown_" .. tostring(dropdown), dropdown, "UIDropDownListTemplate") ---@diagnostic disable-line: assign-type-mismatch
+    local cdropdown = CreateFrame("Button", "LibDropDownExtensionCustomDropDown_" .. tostring(dropdown), dropdown,
+        "UIDropDownListTemplate") ---@diagnostic disable-line: assign-type-mismatch
     cdropdown:SetID(dropdown:GetID())
     cdropdown.options = {}
     cdropdown.buttons = {}
@@ -446,7 +448,6 @@ local function RefreshButton(button)
     end
 
     if option.text then
-
         if option.colorCode then
             button:SetText(option.colorCode .. option.text .. "|r")
         else
@@ -475,7 +476,6 @@ local function RefreshButton(button)
             button:SetNormalFontObject(GameFontHighlightSmallLeft)
             button:SetHighlightFontObject(GameFontHighlightSmallLeft)
         end
-
     else
         button:SetText("")
         icon:Hide()
@@ -494,7 +494,8 @@ local function RefreshButton(button)
         icon:SetHeight(option.iconInfo and option.iconInfo.tSizeY or 16)
         icon:SetTexture(option.icon)
         if option.iconInfo and option.iconInfo.tCoordLeft then
-            icon:SetTexCoord(option.iconInfo.tCoordLeft, option.iconInfo.tCoordRight, option.iconInfo.tCoordTop, option.iconInfo.tCoordBottom)
+            icon:SetTexCoord(option.iconInfo.tCoordLeft, option.iconInfo.tCoordRight, option.iconInfo.tCoordTop,
+                option.iconInfo.tCoordBottom)
         else
             icon:SetTexCoord(0, 1, 0, 1)
         end
@@ -547,7 +548,6 @@ local function RefreshButton(button)
     --]=]
 
     if not option.notCheckable then
-
         local check = button.check
         local uncheck = button.uncheck
 
@@ -600,7 +600,6 @@ local function RefreshButton(button)
             check:Hide()
             uncheck:Show()
         end
-
     else
         button.check:Hide()
         button.uncheck:Hide()
@@ -799,9 +798,10 @@ Lib._separatorTable = Lib._separatorTable or { Lib.Option.Separator }
 ---@param data table?
 ---@return boolean success
 function Lib:RegisterEvent(events, func, levels, data)
-    assert(type(events) == "string" and type(func) == "function", "LibDropDownExtension:RegisterEvent(events, func[, levels][, data]) requires events to be a string and func a function. levels is an optional number 1, 2 or nil for any level.")
+    assert(type(events) == "string" and type(func) == "function",
+        "LibDropDownExtension:RegisterEvent(events, func[, levels][, data]) requires events to be a string and func a function. levels is an optional number 1, 2 or nil for any level.")
     local callback = GetCallbackForFunc(func)
-    for _, event in ipairs({strsplit(" ", events)}) do
+    for _, event in ipairs({ strsplit(" ", events) }) do
         if not callback then
             callback = {} ---@type CustomDropDownCallback
             callback.events = {}
@@ -820,12 +820,13 @@ end
 ---@param levels (number|boolean)?
 ---@return boolean success
 function Lib:UnregisterEvent(events, func, levels)
-    assert(type(events) == "string" and type(func) == "function", "LibDropDownExtension:UnregisterEvent(events, func) requires events to be a string and func a function.")
+    assert(type(events) == "string" and type(func) == "function",
+        "LibDropDownExtension:UnregisterEvent(events, func) requires events to be a string and func a function.")
     local callback, index = GetCallbackForFunc(func)
     if not callback then
         return false
     end
-    for _, event in ipairs({strsplit(" ", events)}) do
+    for _, event in ipairs({ strsplit(" ", events) }) do
         callback.events[event] = levels
     end
     if not next(callback.events) then

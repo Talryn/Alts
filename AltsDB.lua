@@ -24,15 +24,15 @@ AltsDB.Mains = {}
 AltsDB.MainsBySource = {}
 
 local function ReverseTable(table)
-  local reverse = {}
-  if table then
-      for k,v in pairs(table) do
-        for i,a in ipairs(v) do
-          reverse[a] = k
+    local reverse = {}
+    if table then
+        for k, v in pairs(table) do
+            for i, a in ipairs(v) do
+                reverse[a] = k
+            end
         end
-      end
-  end
-  return reverse
+    end
+    return reverse
 end
 
 local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
@@ -44,78 +44,78 @@ local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
 function AltsDB:TitleCase(name)
     if not name then return "" end
     if #name == 0 then return "" end
-	name = name:lower()
+    name = name:lower()
     return name:gsub(MULTIBYTE_FIRST_CHAR, string.upper, 1)
 end
 
 function AltsDB:GetProperRealmName(realm)
-	if not realm then return end
-	realm = self:TitleCase(realm:gsub("[ -]", ""))
-	return realmNames[realm] or realm
+    if not realm then return end
+    realm = self:TitleCase(realm:gsub("[ -]", ""))
+    return realmNames[realm] or realm
 end
 
 function AltsDB:FormatNameWithRealm(name, realm, relative)
-	if not name then return end
-	name = self:TitleCase(name)
-	realm = self:GetProperRealmName(realm)
-	if relative and realm and realm == self.playerRealmAbbr then
-		return name
-	elseif realm and #realm > 0 then
-		return name.."-"..realm
-	else
-		return name
-	end
+    if not name then return end
+    name = self:TitleCase(name)
+    realm = self:GetProperRealmName(realm)
+    if relative and realm and realm == self.playerRealmAbbr then
+        return name
+    elseif realm and #realm > 0 then
+        return name .. "-" .. realm
+    else
+        return name
+    end
 end
 
 function AltsDB:FormatRealmName(realm)
-	-- Spaces are removed.
-	-- Dashes are removed. (e.g., Azjol-Nerub)
-	-- Apostrophe / single quotes are not removed.
-	if not realm then return end
-	return realm:gsub("[ -]", "")
+    -- Spaces are removed.
+    -- Dashes are removed. (e.g., Azjol-Nerub)
+    -- Apostrophe / single quotes are not removed.
+    if not realm then return end
+    return realm:gsub("[ -]", "")
 end
 
 function AltsDB:HasRealm(name)
-	if not name then return end
-	local matches = name:gmatch("[-]")
-	return matches and matches()
+    if not name then return end
+    local matches = name:gmatch("[-]")
+    return matches and matches()
 end
 
 function AltsDB:ParseName(name)
-	if not name then return end
-	local matches = name:gmatch("([^%-]+)")
-	if matches then
-		local nameOnly = matches()
-		local realm = matches()
-		return nameOnly, realm
-	end
-	return nil
+    if not name then return end
+    local matches = name:gmatch("([^%-]+)")
+    if matches then
+        local nameOnly = matches()
+        local realm = matches()
+        return nameOnly, realm
+    end
+    return nil
 end
 
 function AltsDB:FormatUnitName(name, relative)
-	local nameOnly, realm = self:ParseName(name)
-	return self:FormatNameWithRealm(nameOnly, realm, relative)
+    local nameOnly, realm = self:ParseName(name)
+    return self:FormatNameWithRealm(nameOnly, realm, relative)
 end
 
 function AltsDB:FormatUnitList(sep, relative, ...)
-	local str = ""
-	local first = true
-	local v
-	for i = 1, select('#', ...), 1 do
-		v = select(i, ...)
-		if v and #v > 0 then
-			if not first then str = str .. sep end
-			str = str .. self:FormatUnitName(v, relative)
-			if first then first = false end
-		end
-	end
-	return str
+    local str = ""
+    local first = true
+    local v
+    for i = 1, select('#', ...), 1 do
+        v = select(i, ...)
+        if v and #v > 0 then
+            if not first then str = str .. sep end
+            str = str .. self:FormatUnitName(v, relative)
+            if first then first = false end
+        end
+    end
+    return str
 end
 
 function AltsDB:GetAlternateName(name)
-	local nameOnly, realm = self:ParseName(name)
-	return realm and self:TitleCase(nameOnly) or
-		self:FormatNameWithRealm(self:TitleCase(nameOnly), self.playerRealmAbbr)
+    local nameOnly, realm = self:ParseName(name)
+    return realm and self:TitleCase(nameOnly) or
+        self:FormatNameWithRealm(self:TitleCase(nameOnly), self.playerRealmAbbr)
 end
 
 --- Remove a data source, including all main-alt relationships.
@@ -136,10 +136,10 @@ end
 -- @name :RemoveSource
 -- @param source Data source to be removed.
 function AltsDB:RemoveSource(source)
-	if self.useLibAlts then
-		return LibAlts:RemoveSource(source)
-	end
-	return self:RemoveSourceLocal(source)
+    if self.useLibAlts then
+        return LibAlts:RemoveSource(source)
+    end
+    return self:RemoveSourceLocal(source)
 end
 
 --- Define a main-alt relationship.
@@ -155,7 +155,7 @@ function AltsDB:SetAltLocal(main, alt, source)
 
     if not source then
         self.db.realm.alts[main] = self.db.realm.alts[main] or {}
-        for i,v in ipairs(self.db.realm.alts[main]) do
+        for i, v in ipairs(self.db.realm.alts[main]) do
             if v == alt then
                 return
             end
@@ -170,7 +170,7 @@ function AltsDB:SetAltLocal(main, alt, source)
         self.db.realm.altsBySource[source] = self.db.realm.altsBySource[source] or {}
         self.db.realm.altsBySource[source][main] =
             self.db.realm.altsBySource[source][main] or {}
-        for i,v in ipairs(self.db.realm.altsBySource[source][main]) do
+        for i, v in ipairs(self.db.realm.altsBySource[source][main]) do
             if v == alt then
                 return
             end
@@ -191,10 +191,10 @@ end
 -- @param alt Name of the alt character.
 -- @param source The data source to store it in.
 function AltsDB:SetAlt(main, alt, source)
-	if self.useLibAlts then
-		return LibAlts:SetAlt(main, alt, source)
-	end
-	return self:SetAltLocal(main, alt, source)
+    if self.useLibAlts then
+        return LibAlts:SetAlt(main, alt, source)
+    end
+    return self:SetAltLocal(main, alt, source)
 end
 
 --- Return a list of alts for a given name.
@@ -202,9 +202,9 @@ end
 -- @param main Name of the main character.
 -- @return list List of alts for the main.
 function AltsDB:GetAlts(main)
-	if self.useLibAlts then
-		return LibAlts:GetAlts(main)
-	end
+    if self.useLibAlts then
+        return LibAlts:GetAlts(main)
+    end
 
     if not main then return end
 
@@ -213,16 +213,16 @@ function AltsDB:GetAlts(main)
     local name
 
     if self.db.realm.alts[main] and #self.db.realm.alts[main] > 0 then
-        for i,v in ipairs(self.db.realm.alts[main]) do
+        for i, v in ipairs(self.db.realm.alts[main]) do
             if not tContains(alts, v) then
                 tinsert(alts, v)
             end
         end
     end
 
-    for k,v in pairs(self.db.realm.altsBySource) do
+    for k, v in pairs(self.db.realm.altsBySource) do
         if self.db.realm.altsBySource[k][main] and #self.db.realm.altsBySource[k][main] > 0 then
-            for i,v in ipairs(self.db.realm.altsBySource[k][main]) do
+            for i, v in ipairs(self.db.realm.altsBySource[k][main]) do
                 if not tContains(alts, v) then
                     tinsert(alts, v)
                 end
@@ -243,23 +243,23 @@ end
 -- @param main Name of the main character.
 -- @return list List of alts for the main.
 function AltsDB:GetAltsForMain(main, merge)
-	local alts = { self:GetAlts(main) }
-	if merge then
-		local altMain = self:GetAlternateName(main)
-		local moreAlts = { self:GetAlts(altMain) }
-		if #moreAlts > #alts then main = altMain end
-		for i, v in ipairs(moreAlts) do
-			if not tContains(alts, v) then
-				tinsert(alts, v)
-			end
-		end
-	else
-		if not alts or #alts < 1 then
-			main = self:GetAlternateName(main)
-			alts = { self:GetAlts(main) }
-		end
-	end
-	return main, alts
+    local alts = { self:GetAlts(main) }
+    if merge then
+        local altMain = self:GetAlternateName(main)
+        local moreAlts = { self:GetAlts(altMain) }
+        if #moreAlts > #alts then main = altMain end
+        for i, v in ipairs(moreAlts) do
+            if not tContains(alts, v) then
+                tinsert(alts, v)
+            end
+        end
+    else
+        if not alts or #alts < 1 then
+            main = self:GetAlternateName(main)
+            alts = { self:GetAlts(main) }
+        end
+    end
+    return main, alts
 end
 
 --- Return a list of alts for a given name for a given data source.
@@ -273,9 +273,9 @@ function AltsDB:GetAltsForSource(main, source)
     main = self:TitleCase(main)
 
     if not source then
-    	if self.db.realm.alts[main] and #self.db.realm.alts[main] > 0 then
-    	    return unpack(self.db.realm.alts[main])
-    	end
+        if self.db.realm.alts[main] and #self.db.realm.alts[main] > 0 then
+            return unpack(self.db.realm.alts[main])
+        end
     else
         if not self.db.realm.altsBySource[source] then return nil end
 
@@ -294,45 +294,45 @@ end
 -- @param alt Name of the alt being removed.
 -- @param source The data source to use.
 function AltsDB:DeleteAltLocal(main, alt, source)
-	main = self:TitleCase(main)
-	alt = self:TitleCase(alt)
+    main = self:TitleCase(main)
+    alt = self:TitleCase(alt)
 
     if not source then
-    	if not self.db.realm.alts[main] then return end
+        if not self.db.realm.alts[main] then return end
 
-    	for i = 1, #self.db.realm.alts[main] do
-    		if self.db.realm.alts[main][i] == alt then
-    			tremove(self.db.realm.alts[main], i)
-    		end
-    	end
-    	if #self.db.realm.alts[main] == 0 then
-    		self.db.realm.alts[main] = nil
-    	end
+        for i = 1, #self.db.realm.alts[main] do
+            if self.db.realm.alts[main][i] == alt then
+                tremove(self.db.realm.alts[main], i)
+            end
+        end
+        if #self.db.realm.alts[main] == 0 then
+            self.db.realm.alts[main] = nil
+        end
 
-    	if self.Mains then
-    	    for i,v in ipairs(self.Mains) do
-    	        if v[1] == alt then
-    	            tremove(self.Mains, i)
+        if self.Mains then
+            for i, v in ipairs(self.Mains) do
+                if v[1] == alt then
+                    tremove(self.Mains, i)
                 end
             end
         end
     else
-    	if not self.db.realm.altsBySource[source] then return end
-    	if not self.db.realm.altsBySource[source][main] then return end
+        if not self.db.realm.altsBySource[source] then return end
+        if not self.db.realm.altsBySource[source][main] then return end
 
-    	for i = 1, #self.db.realm.altsBySource[source][main] do
-    		if self.db.realm.altsBySource[source][main][i] == alt then
-    			tremove(self.db.realm.altsBySource[source][main], i)
-    		end
-    	end
-    	if #self.db.realm.altsBySource[source][main] == 0 then
-    		self.db.realm.altsBySource[source][main] = nil
-    	end
+        for i = 1, #self.db.realm.altsBySource[source][main] do
+            if self.db.realm.altsBySource[source][main][i] == alt then
+                tremove(self.db.realm.altsBySource[source][main], i)
+            end
+        end
+        if #self.db.realm.altsBySource[source][main] == 0 then
+            self.db.realm.altsBySource[source][main] = nil
+        end
 
-    	if self.MainsBySource and self.MainsBySource[source] then
-    	    for i,v in ipairs(self.MainsBySource[source]) do
-    	        if v[1] == alt then
-    	            tremove(self.MainsBySource[source], i)
+        if self.MainsBySource and self.MainsBySource[source] then
+            for i, v in ipairs(self.MainsBySource[source]) do
+                if v[1] == alt then
+                    tremove(self.MainsBySource[source], i)
                 end
             end
         end
@@ -345,10 +345,10 @@ end
 -- @param alt Name of the alt being removed.
 -- @param source The data source to use.
 function AltsDB:DeleteAlt(main, alt, source)
-	if self.useLibAlts then
-		return LibAlts:DeleteAlt(main, alt, source)
-	end
-	return self:DeleteAltLocal(main, alt, source)
+    if self.useLibAlts then
+        return LibAlts:DeleteAlt(main, alt, source)
+    end
+    return self:DeleteAltLocal(main, alt, source)
 end
 
 --- Get the main for a given alt character
@@ -356,20 +356,20 @@ end
 -- @param alt Name of the alt character.
 -- @return string Name of the main character.
 function AltsDB:GetMain(alt)
-	if self.useLibAlts then
-		return LibAlts:GetMain(alt)
-	end
+    if self.useLibAlts then
+        return LibAlts:GetMain(alt)
+    end
 
-	if not alt or not self.Mains then return end
-	alt = self:TitleCase(alt)
+    if not alt or not self.Mains then return end
+    alt = self:TitleCase(alt)
 
-	local main = self.Mains[alt]
-	if main then return main end
+    local main = self.Mains[alt]
+    if main then return main end
 
-	if not self.MainsBySource then return nil end
-	for k, v in pairs(self.MainsBySource) do
-	    main = self.MainsBySource[k][alt]
-	    if main then return main end
+    if not self.MainsBySource then return nil end
+    for k, v in pairs(self.MainsBySource) do
+        main = self.MainsBySource[k][alt]
+        if main then return main end
     end
 end
 
@@ -382,33 +382,33 @@ end
 function AltsDB:GetMainForAlt(alt)
     if not alt or #alt < 1 then return end
 
-	local altFound = alt
+    local altFound = alt
     local main = self:GetMain(altFound)
-	if not main or #main < 1 then
-		altFound = self:GetAlternateName(alt)
-		main = self:GetMain(altFound)
-	end
-	return main, main and altFound or nil
+    if not main or #main < 1 then
+        altFound = self:GetAlternateName(alt)
+        main = self:GetMain(altFound)
+    end
+    return main, main and altFound or nil
 end
 
 --- Get all the mains in the database
 -- @name :GetAllMains
 -- @return table Table of all main names.
 function AltsDB:GetAllMains(table)
-	if self.useLibAlts then
-		return LibAlts:GetAllMains(table)
-	end
+    if self.useLibAlts then
+        return LibAlts:GetAllMains(table)
+    end
 
     for k, v in pairs(self.db.realm.alts) do
         if not tContains(table, k) then
             tinsert(table, k)
         end
     end
-	for k, v in pairs(self.db.realm.altsBySource) do
-	    for key,val in pairs(self.db.realm.altsBySource[k]) do
-	        if not tContains(table, key) then
-	            tinsert(table, key)
-	        end
+    for k, v in pairs(self.db.realm.altsBySource) do
+        for key, val in pairs(self.db.realm.altsBySource[k]) do
+            if not tContains(table, key) then
+                tinsert(table, key)
+            end
         end
     end
     return table
@@ -472,10 +472,10 @@ function AltsDB:RemoveSourceEvent(event, source)
 end
 
 function AltsDB:OnInitialize(Alts)
-	self.Alts = Alts
-	self.db = Alts.db
-	self.playerRealm = _G.GetRealmName()
-	self.playerRealmAbbr = self:FormatRealmName(self.playerRealm)
+    self.Alts = Alts
+    self.db = Alts.db
+    self.playerRealm = _G.GetRealmName()
+    self.playerRealmAbbr = self:FormatRealmName(self.playerRealm)
 
     self:UpdateMains()
 
@@ -497,67 +497,67 @@ end
 
 function AltsDB:OnEnable()
     -- Build reverse lookup tables for other guilds.
-    for k,v in pairs(self.db.realm.altsBySource) do
+    for k, v in pairs(self.db.realm.altsBySource) do
         local guildName = _G.GetGuildInfo("player")
         if not (k == guildName and self.db.profile.autoGuildImport) then
-			self:UpdateMainsBySource(k)
+            self:UpdateMainsBySource(k)
         end
     end
 end
 
 function AltsDB:SetBNetLink(battleTag, name, value)
-	if battleTag and name then
-		self.db.global.battleNet.accounts[battleTag] = self.db.global.battleNet.accounts[battleTag] or {}
-		self.db.global.battleNet.accounts[battleTag][name] = value
-	end
+    if battleTag and name then
+        self.db.global.battleNet.accounts[battleTag] = self.db.global.battleNet.accounts[battleTag] or {}
+        self.db.global.battleNet.accounts[battleTag][name] = value
+    end
 end
 
 function AltsDB:AddBNetLink(battleTag, characterName, realmName)
-	if not characterName or not realmName or #realmName == 0 then return end
-	local name = AltsDB:FormatNameWithRealm(characterName, realmName)
-	self:SetBNetLink(battleTag, name, _G.time())
-	self.db.global.battleNet.characters[name] = battleTag
+    if not characterName or not realmName or #realmName == 0 then return end
+    local name = AltsDB:FormatNameWithRealm(characterName, realmName)
+    self:SetBNetLink(battleTag, name, _G.time())
+    self.db.global.battleNet.characters[name] = battleTag
 end
 
 function AltsDB:RemoveBNetLink(battleTag, characterName, realmName)
-	local name = AltsDB:FormatNameWithRealm(characterName, realmName)
-	self:SetBNetLink(battleTag, name, nil)
-	self.db.global.battleNet.characters[name] = nil
+    local name = AltsDB:FormatNameWithRealm(characterName, realmName)
+    self:SetBNetLink(battleTag, name, nil)
+    self.db.global.battleNet.characters[name] = nil
 end
 
 function AltsDB:RemoveBNetAccount(battleTag)
-	if battleTag then
-		for name, value in _G.pairs(self.db.global.battleNet.accounts[battleTag] or {}) do
-			self.db.global.battleNet.characters[name] = nil
-		end
-		self.db.global.battleNet.accounts[battleTag] = nil
-	end
+    if battleTag then
+        for name, value in _G.pairs(self.db.global.battleNet.accounts[battleTag] or {}) do
+            self.db.global.battleNet.characters[name] = nil
+        end
+        self.db.global.battleNet.accounts[battleTag] = nil
+    end
 end
 
 function AltsDB:GetBNetAccount(battleTag)
-	if battleTag then
-		return self.db.global.battleNet.accounts[battleTag]
-	end
+    if battleTag then
+        return self.db.global.battleNet.accounts[battleTag]
+    end
 end
 
 function AltsDB:GetBNetAccountForName(name)
-	if name then
-		return self.db.global.battleNet.characters[name]
-	end
+    if name then
+        return self.db.global.battleNet.characters[name]
+    end
 end
 
 function AltsDB:FindBNetAccount(searchTerm)
-	if not searchTerm then return {} end
-	local results = {}
-	local term = searchTerm:lower()
-	for tag, data in _G.pairs(self.db.global.battleNet.accounts) do
-		if tag:lower():find(term) then
-			results[#results + 1] = tag
-		end
-	end
-	return results
+    if not searchTerm then return {} end
+    local results = {}
+    local term = searchTerm:lower()
+    for tag, data in _G.pairs(self.db.global.battleNet.accounts) do
+        if tag:lower():find(term) then
+            results[#results + 1] = tag
+        end
+    end
+    return results
 end
 
 function AltsDB:GetAllBNetAccounts()
-	return addon.getTableKeys(self.db.global.battleNet.accounts)
+    return addon.getTableKeys(self.db.global.battleNet.accounts)
 end

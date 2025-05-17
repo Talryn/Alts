@@ -24,7 +24,7 @@ function Alts:GetOptions()
                         name = L["Minimap Button"],
                         desc = L["Toggle the minimap button"],
                         type = "toggle",
-                        set = function(info,val)
+                        set = function(info, val)
                             -- Reverse the value since the stored value is to hide it
                             self.db.profile.minimap.hide = not val
                             if self.db.profile.minimap.hide then
@@ -68,7 +68,7 @@ function Alts:GetOptions()
                         name = L["Lock"],
                         desc = L["Lock_OptionDesc"],
                         type = "toggle",
-                        set = function(info,val)
+                        set = function(info, val)
                             self.db.profile.lock_main_window = val
                             addon.altsFrame.lock = val
                         end,
@@ -79,7 +79,7 @@ function Alts:GetOptions()
                         name = L["Remember Position"],
                         desc = L["RememberPosition_OptionDesc"],
                         type = "toggle",
-                        set = function(info,val) self.db.profile.remember_main_pos = val end,
+                        set = function(info, val) self.db.profile.remember_main_pos = val end,
                         get = function(info) return self.db.profile.remember_main_pos end,
                         order = 220
                     },
@@ -92,7 +92,7 @@ function Alts:GetOptions()
                         name = L["Wrap Tooltips"],
                         desc = L["Wrap notes in tooltips"],
                         type = "toggle",
-                        set = function(info,val) self.db.profile.wrapTooltip = val end,
+                        set = function(info, val) self.db.profile.wrapTooltip = val end,
                         get = function(info) return self.db.profile.wrapTooltip end,
                         order = 310
                     },
@@ -103,7 +103,7 @@ function Alts:GetOptions()
                         min = 20,
                         max = 80,
                         step = 1,
-                        set = function(info,val) self.db.profile.wrapTooltipLength = val end,
+                        set = function(info, val) self.db.profile.wrapTooltipLength = val end,
                         get = function(info) return self.db.profile.wrapTooltipLength end,
                         order = 320
                     },
@@ -116,7 +116,7 @@ function Alts:GetOptions()
                         order = 501,
                         type = "description",
                         name = L["InterfaceModifications_Desc"],
-                    },    
+                    },
                 },
             },
             notes = {
@@ -208,7 +208,8 @@ function Alts:GetOptions()
                     },
                     singleLineChatDisplay = {
                         name = L["Single Line for Chat"],
-                        desc = L["Toggles whether the main and alt information is on one line or separate lines in the chat window."],
+                        desc = L
+                        ["Toggles whether the main and alt information is on one line or separate lines in the chat window."],
                         type = "toggle",
                         set = function(info, val) self.db.profile.singleLineChatDisplay = val end,
                         get = function(info) return self.db.profile.singleLineChatDisplay end,
@@ -216,7 +217,8 @@ function Alts:GetOptions()
                     },
                     singleLineTooltipDisplay = {
                         name = L["Single Line for Tooltip"],
-                        desc = L["Toggles whether the main and alt information is on one line or separate lines in tooltips."],
+                        desc = L
+                        ["Toggles whether the main and alt information is on one line or separate lines in tooltips."],
                         type = "toggle",
                         set = function(info, val) self.db.profile.singleLineTooltipDisplay = val end,
                         get = function(info) return self.db.profile.singleLineTooltipDisplay end,
@@ -274,7 +276,7 @@ function Alts:GetOptions()
                             ["GuildLog"] = L["Guild Log"]
                         },
                         set = function(info, val)
-                                self.db.profile.reportTo = val
+                            self.db.profile.reportTo = val
                         end,
                         get = function(info)
                             return self.db.profile.reportTo
@@ -373,7 +375,7 @@ function Alts:GetOptions()
 
     if self.db.profile.altMatching.methods then
         for i, v in ipairs(self.db.profile.altMatching.methods) do
-            options.args.formats.args["regex"..tostring(i)] = {
+            options.args.formats.args["regex" .. tostring(i)] = {
                 order = 100 + i,
                 name = v.description,
                 desc = v.description,
@@ -402,12 +404,12 @@ function Alts:GetOptions()
 end
 
 function Alts:ShowOptions()
-    if Settings and Settings.OpenToCategory and 
+    if Settings and Settings.OpenToCategory and
         _G.type(Settings.OpenToCategory) == "function" then
         Settings.OpenToCategory(addon.addonTitle)
     else
-    	_G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Notes)
-	    _G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
+        _G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Notes)
+        _G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
     end
 end
 
@@ -415,16 +417,16 @@ function Alts:InterfaceModsOptions()
     -- Options for all versions
     local baseOrderAll = 500
     local allOptions = {
-      unitMenusSetMain = {
-        name = L["Unit Menus-Set Main"],
-        desc = L["UnitMenusSetMain_Opt"],
-        type = "toggle",
-        set = function(info,val) self.db.profile.uiModifications.unitMenusSetMain = val end,
-        get = function(info) return self.db.profile.uiModifications.unitMenusSetMain end,
-        order = baseOrderAll + 10
-      },
+        unitMenusSetMain = {
+            name = L["Unit Menus-Set Main"],
+            desc = L["UnitMenusSetMain_Opt"],
+            type = "toggle",
+            set = function(info, val) self.db.profile.uiModifications.unitMenusSetMain = val end,
+            get = function(info) return self.db.profile.uiModifications.unitMenusSetMain end,
+            order = baseOrderAll + 10
+        },
     }
-  
+
     -- Options for current retail version.
     local baseOrderCurrent = 600
     local currentOptions = {
@@ -432,7 +434,7 @@ function Alts:InterfaceModsOptions()
             name = L["Guild Roster Tooltip"],
             desc = L["GuildRosterTooltip_Opt"],
             type = "toggle",
-            set = function(info,val) self.db.profile.uiModifications.GuildRosterTooltip = val end,
+            set = function(info, val) self.db.profile.uiModifications.GuildRosterTooltip = val end,
             get = function(info) return self.db.profile.uiModifications.GuildRosterTooltip end,
             order = baseOrderCurrent + 10
         },
@@ -440,40 +442,39 @@ function Alts:InterfaceModsOptions()
             name = L["Communities Tooltips"],
             desc = L["CommunitiesTooltips_Opt"],
             type = "toggle",
-            set = function(info,val) self.db.profile.uiModifications.CommunitiesTooltip = val end,
+            set = function(info, val) self.db.profile.uiModifications.CommunitiesTooltip = val end,
             get = function(info) return self.db.profile.uiModifications.CommunitiesTooltip end,
             order = baseOrderCurrent + 20
         },
     }
-  
+
     -- Options for Classic only.
     local classicOptions = {
     }
-  
+
     -- Options for TBC only.
     local tbcOptions = {
     }
-  
+
     local options = allOptions
-  
+
     if addon.Retail then
-      for k, v in _G.pairs(currentOptions) do
-        options[k] = v
-      end
+        for k, v in _G.pairs(currentOptions) do
+            options[k] = v
+        end
     end
-  
+
     if addon.TBC then
-      for k, v in _G.pairs(tbcOptions) do
-        options[k] = v
-      end
+        for k, v in _G.pairs(tbcOptions) do
+            options[k] = v
+        end
     end
-  
+
     if addon.Classic then
-      for k, v in _G.pairs(classicOptions) do
-        options[k] = v
-      end
+        for k, v in _G.pairs(classicOptions) do
+            options[k] = v
+        end
     end
-  
+
     return options
-  end
-  
+end
