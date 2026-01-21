@@ -2380,6 +2380,7 @@ function Alts:AddDataToTooltip(tooltip, owner, name, anchor, spacer)
 end
 
 function Alts:OnTooltipSetUnit(tooltip, ...)
+    if _G.IsInInstance() then return end
     if tooltip ~= _G.GameTooltip then return end
     if not self.db.profile.showMainInTooltip and
         not self.db.profile.showAltsInTooltip then
