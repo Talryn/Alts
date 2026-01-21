@@ -633,7 +633,7 @@ function Alts:OnInitialize()
     LibStub("AceConfigRegistry-3.0"):RegisterOptionsTable(displayName, addon.options)
     self.optionsFrame = {}
     local ACD = LibStub("AceConfigDialog-3.0")
-    self.optionsFrame.Main = ACD:AddToBlizOptions(
+    self.optionsFrame.Main, self.optionsCategoryId = ACD:AddToBlizOptions(
         displayName, displayName, nil, "core")
     self.optionsFrame.Notes = ACD:AddToBlizOptions(
         displayName, L["Notes"], displayName, "notes")

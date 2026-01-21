@@ -405,7 +405,7 @@ end
 function Alts:ShowOptions()
     if Settings and Settings.OpenToCategory and
         _G.type(Settings.OpenToCategory) == "function" then
-        Settings.OpenToCategory(addon.addonTitle)
+        Settings.OpenToCategory(self.optionsCategoryId)
     else
         _G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Notes)
         _G.InterfaceOptionsFrame_OpenToCategory(self.optionsFrame.Main)
