@@ -266,7 +266,7 @@ end
 
 function Alts:AddMessage(frame, text, ...)
     -- If we are monitoring chat and the message is text then try to rewrite it.
-    if monitor and text and _G.type(text) == "string" then
+    if monitor and addon.canaccessvalue(text) and text and _G.type(text) == "string" then
         text = text:gsub("(|Hplayer:([^:%]]+).-|h.-|h)", AddMainNameForChat)
     end
     return self.hooks[frame].AddMessage(frame, text, ...)
@@ -2445,6 +2445,7 @@ function Alts:DisplayMain(name)
 end
 
 function Alts:CHAT_MSG_SYSTEM(event, message)
+    if not addon.canaccessvalue(message) then return end
     local name
 
     if self.db.profile.showInfoOnWho then

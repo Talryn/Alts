@@ -102,3 +102,12 @@ function addon.HideGameOptions()
         optionsFrame:Hide()
     end
 end
+
+local canaccessvalue = (_G.canaccessvalue and _G.type(_G.canaccessvalue) == "function") and _G.canaccessvalue or nil
+function addon.canaccessvalue(value)
+    if canaccessvalue then
+        return canaccessvalue(value)
+    else
+        return true
+    end
+end
