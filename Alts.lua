@@ -2253,6 +2253,7 @@ function Alts:OnEnable()
         C_EventUtils.IsEventValid("ADDON_RESTRICTION_STATE_CHANGED")
     -- Track addon restriction state
     if addon.restrictedEvents then
+        self:CheckRestrictedState()
         self:RegisterEvent("ADDON_RESTRICTION_STATE_CHANGED")
     end
 
@@ -2485,9 +2486,26 @@ function Alts:PLAYER_REGEN_DISABLED()
     end
 end
 
-function Alts:ADDON_RESTRICTION_STATE_CHANGED(event, restrictType, restrictState)
-    addon.restricted = restrictState ~= Enum.AddOnRestrictionState.Inactive
+function Alts:SetRestrictedState(restricted)
+    addon.restricted = restricted
     if self.db.profile.debug then self:Print("Restrictions " .. _G.tostring(addon.restricted)) end
+end
+
+function Alts:CheckRestrictedState()
+    local restricted = false
+    if C_RestrictedActions and C_RestrictedActions.GetAddOnRestrictionState then
+        for _, i in _G.pairs(Enum.AddOnRestrictionType) do
+            local _, state = C_RestrictedActions.GetAddOnRestrictionState(i)
+            if state ~= Enum.AddOnRestrictionState.Inactive then
+                restricted = true
+            end
+        end
+    end
+    self:SetRestrictedState(restricted)
+end
+
+function Alts:ADDON_RESTRICTION_STATE_CHANGED(event, restrictType, restrictState)
+    self:SetRestrictedState(restrictState ~= Enum.AddOnRestrictionState.Inactive)
 end
 
 function Alts:PLAYER_REGEN_ENABLED()
