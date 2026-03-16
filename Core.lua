@@ -28,6 +28,8 @@ local function versionInRange(version, start, finish)
     return version >= start and version < finish
 end
 
+addon.restricted = false
+
 addon.addonTitle = C_AddOns.GetAddOnMetadata(ADDON_NAME, "Title")
 addon.addonVersion = cleanupVersion("@project-version@")
 

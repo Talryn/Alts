@@ -2248,6 +2248,14 @@ function Alts:OnEnable()
     -- Call ShowFriends to get the friend and ignore data updated.
     C_FriendList.ShowFriends()
 
+    addon.restricted = false
+    addon.restrictedEvents = C_EventUtils and C_EventUtils.IsEventValid and
+        C_EventUtils.IsEventValid("ADDON_RESTRICTION_STATE_CHANGED")
+    -- Track addon restriction state
+    if addon.restrictedEvents then
+        self:RegisterEvent("ADDON_RESTRICTION_STATE_CHANGED")
+    end
+
     -- Populate the MainsTable
     self:UpdateMainsTable()
 
@@ -2290,6 +2298,10 @@ function Alts:OnDisable()
     self:UnregisterEvent("PLAYER_REGEN_ENABLED")
     self:UnregisterEvent("PLAYER_REGEN_DISABLED")
     self:UnhookChatFrames()
+
+    if addon.restrictedEvents then
+        self:UnregisterEvent("ADDON_RESTRICTION_STATE_CHANGED")
+    end
 
     for name, obj in pairs(addon.modules) do
         if obj and obj.Disable then
@@ -2380,7 +2392,7 @@ function Alts:AddDataToTooltip(tooltip, owner, name, anchor, spacer)
 end
 
 function Alts:OnTooltipSetUnit(tooltip, ...)
-    if _G.IsInInstance() then return end
+    if addon.restricted then return end
     if tooltip ~= _G.GameTooltip then return end
     if not self.db.profile.showMainInTooltip and
         not self.db.profile.showAltsInTooltip then
@@ -2471,6 +2483,11 @@ function Alts:PLAYER_REGEN_DISABLED()
     if self.db.profile.disableInCombat then
         self:UnregisterEvent("CHAT_MSG_SYSTEM")
     end
+end
+
+function Alts:ADDON_RESTRICTION_STATE_CHANGED(event, restrictType, restrictState)
+    addon.restricted = restrictState ~= Enum.AddOnRestrictionState.Inactive
+    if self.db.profile.debug then self:Print("Restrictions " .. _G.tostring(addon.restricted)) end
 end
 
 function Alts:PLAYER_REGEN_ENABLED()
