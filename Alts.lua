@@ -2403,7 +2403,7 @@ function Alts:OnTooltipSetUnit(tooltip, ...)
     local name, unitid = tooltip:GetUnit()
 
     -- If the unit exists and is a player then check if for main/alts.
-    if unitid and not issecretvalue(unitid) and _G.UnitExists(unitid) and 
+    if unitid and not addon.issecretvalue(unitid) and _G.UnitExists(unitid) and
         _G.UnitIsPlayer(unitid) then
         -- Get the unit's name including the realm name
         local nameString = _G.GetUnitName(unitid, true)
