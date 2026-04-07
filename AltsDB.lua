@@ -80,6 +80,15 @@ function AltsDB:HasRealm(name)
     return matches and matches()
 end
 
+function AltsDB:CombineNameAndRealm(name, realm)
+    if not name then return end
+    if realm and #realm > 0 then
+        return name .. "-" .. realm
+    else
+        return name
+    end
+end
+
 function AltsDB:ParseName(name)
     if not name then return end
     local matches = name:gmatch("([^%-]+)")

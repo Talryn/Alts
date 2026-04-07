@@ -393,6 +393,9 @@ function Alts:UpdateGuild()
         achRank, isMobile, canSoR = _G.GetGuildRosterInfo(i)
         local years, months, days, hours = _G.GetGuildRosterLastOnline(i)
 
+        local nameOnly, parsedRealm = AltsDB:ParseName(name)
+        local combinedName = AltsDB:CombineNameAndRealm(nameOnly, parsedRealm)
+
         local lastOnline = 0
         if online then
             lastOnline = _G.time()
@@ -400,7 +403,7 @@ function Alts:UpdateGuild()
             local diff = (((years * 365) + (months * 30) + days) * 24 + hours) * 60 * 60
             lastOnline = _G.time() - diff
         end
-        guildMembers[name] = lastOnline
+        guildMembers[combinedName] = lastOnline
     end
 
     -- Save the information if we're tracking the guild.
