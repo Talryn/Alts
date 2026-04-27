@@ -2408,7 +2408,7 @@ local function GetTooltipUnitInfo(tooltip, data)
 end
 
 function Alts:OnTooltipSetUnit(tooltip, data, ...)
-    if addon.restricted then return end
+    --if addon.restricted then return end
     if tooltip ~= _G.GameTooltip then return end
     if not self.db.profile.showMainInTooltip and
         not self.db.profile.showAltsInTooltip then
@@ -2423,7 +2423,7 @@ function Alts:OnTooltipSetUnit(tooltip, data, ...)
         -- Get the unit's name including the realm name
         local nameString = _G.GetUnitName(unitid, true)
         if not nameString then return end
-        self:AddDataToTooltip(tooltip, nil, name)
+        self:AddDataToTooltip(tooltip, nil, nameString, nil, false)
     end
 end
 
