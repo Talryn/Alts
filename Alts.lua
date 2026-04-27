@@ -2395,7 +2395,19 @@ function Alts:AddDataToTooltip(tooltip, owner, name, anchor, spacer)
     return added
 end
 
-function Alts:OnTooltipSetUnit(tooltip, ...)
+local function GetTooltipUnitInfo(tooltip, data)
+    if C_TooltipInfo and TooltipDataProcessor then
+        local guid = data and data.guid
+        if guid and not addon.issecretvalue(guid) then
+            local unitid = UnitTokenFromGUID(guid)
+            return nil, unitid
+        end
+    else
+        return tooltip:GetUnit()
+    end
+end
+
+function Alts:OnTooltipSetUnit(tooltip, data, ...)
     if addon.restricted then return end
     if tooltip ~= _G.GameTooltip then return end
     if not self.db.profile.showMainInTooltip and
@@ -2403,7 +2415,7 @@ function Alts:OnTooltipSetUnit(tooltip, ...)
         return
     end
 
-    local name, unitid = tooltip:GetUnit()
+    local name, unitid = GetTooltipUnitInfo(tooltip, data)
 
     -- If the unit exists and is a player then check if for main/alts.
     if unitid and not addon.issecretvalue(unitid) and _G.UnitExists(unitid) and
