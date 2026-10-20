@@ -683,10 +683,17 @@ function Alts:OnInitialize()
     })
     icon:Register("AltsLDB", altsLDB, self.db.profile.minimap)
 
-    playerName = _G.UnitName("player")
-    playerRealm = _G.GetRealmName()
-    playerRealmAbbr = AltsDB:FormatRealmName(playerRealm)
-    playerFullName = AltsDB:FormatNameWithRealm(playerName, playerRealm)
+    if addon.Forever then
+        playerName = addon.GetUnitName("player")
+        playerRealm = ""
+        playerRealmAbbr = ""
+        playerFullName = playerName
+    else
+        playerName = _G.UnitName("player")
+        playerRealm = _G.GetRealmName()
+        playerRealmAbbr = AltsDB:FormatRealmName(playerRealm)
+        playerFullName = AltsDB:FormatNameWithRealm(playerName, playerRealm)
+    end
     playerFullNameLower = playerFullName:lower()
 
     for name, obj in pairs(addon.modules) do
@@ -698,25 +705,37 @@ end
 
 function Alts:SetMainHandler(input)
     if input and #input > 0 then
-        local alt, main = string.match(input, "^(%S+) *(.*)")
-        if main and #main > 0 then
-            AltsDB:SetAlt(main, alt)
-
-            if self.db.profile.verbose == true then
-                local strFormat = L["Set main for %s: %s"]
-                self:Print(strFormat:format(AltsDB:FormatUnitName(main), AltsDB:FormatUnitName(alt)))
-            end
+        local strings = split(input)
+        local alt, main
+        if addon.Forever then
+            alt = AltsDB:FormatFullName(strings[1], strings[2])
+            main = AltsDB:FormatFullName(strings[3], strings[4])
         else
-            main = AltsDB:GetMain(alt)
-
-            --self:StaticPopupSetMain(alt, main)
-            setMainFrame.charname:SetText(alt)
-            setMainFrame.editbox:SetText(main or "")
-            setMainFrame:Show()
-            --self:Print(L["Usage: /setmain <alt> <main>"])
+            alt = strings[1]
+            main = strings[2]
         end
+        self:SetMainForAlt(alt, main)
     else
         self:Print(L["Usage: /setmain <alt> <main>"])
+    end
+end
+
+function Alts:SetMainForAlt(alt, main)
+    if not (alt and #alt > 0) then return end
+    if main and #main > 0 then
+	    AltsDB:SetAlt(main, alt)
+
+	    if self.db.profile.verbose == true then
+		    local strFormat = L["Set main for %s: %s"]
+		    self:Print(strFormat:format(AltsDB:FormatUnitName(main), AltsDB:FormatUnitName(alt)))
+	    end
+    else
+	    main = AltsDB:GetMain(alt)
+
+	    --self:StaticPopupSetMain(alt, main)
+	    setMainFrame.charname:SetText(alt)
+	    setMainFrame.editbox:SetText(main or "")
+	    setMainFrame:Show()
     end
 end
 
@@ -2421,7 +2440,7 @@ function Alts:OnTooltipSetUnit(tooltip, data, ...)
     if unitid and not addon.issecretvalue(unitid) and _G.UnitExists(unitid) and
         _G.UnitIsPlayer(unitid) then
         -- Get the unit's name including the realm name
-        local unitName = _G.GetUnitName(unitid, true)
+        local unitName = addon.GetUnitName(unitid, true)
         if not unitName then return end
         self:AddDataToTooltip(tooltip, nil, unitName, nil, false)
     end
@@ -2551,6 +2570,14 @@ function Alts:IGNORELIST_UPDATE(event, message)
     self:UnregisterEvent("IGNORELIST_UPDATE")
     if self.db.profile.debug then self:Print("Ignore list updated.") end
     self:CheckAndUpdateIgnores()
+end
+
+local function split(str)
+    local t = {}
+    for word in str:gmatch("%S+") do
+       table.insert(t, word)
+    end
+    return t
 end
 
 function wrap(str, limit, indent, indent1, offset)

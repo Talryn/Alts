@@ -35,9 +35,10 @@ addon.addonVersion = cleanupVersion("@project-version@")
 
 addon.CURRENT_BUILD, addon.CURRENT_INTERNAL,
 addon.CURRENT_BUILD_DATE, addon.CURRENT_UI_VERSION = _G.GetBuildInfo()
-addon.Classic = versionInRange(addon.CURRENT_UI_VERSION, 0, 20000)
+addon.Classic = versionInRange(addon.CURRENT_UI_VERSION, 0, 16000)
 addon.TBC = versionInRange(addon.CURRENT_UI_VERSION, 20000, 30000)
 addon.Retail = versionInRange(addon.CURRENT_UI_VERSION, 90000)
+addon.Forever = versionInRange(addon.CURRENT_UI_VERSION, 16000, 20000)
 
 addon.modules = {}
 function addon:RegisterModule(name, obj)
@@ -102,6 +103,14 @@ function addon.HideGameOptions()
         end
     else
         optionsFrame:Hide()
+    end
+end
+
+function addon.GetUnitName(unit, showServerName)
+    if addon.Forever then
+        return _G.GetUnitName(unit)
+    else
+        return _G.GetUnitName(unit, showServerName)
     end
 end
 

@@ -41,10 +41,14 @@ local MULTIBYTE_FIRST_CHAR = "^([\192-\255]?%a?[\128-\191]*)"
 -- @param name The name to be converted.
 -- @return string The converted name.
 function AltsDB:TitleCase(name)
-    if not name then return "" end
-    if #name == 0 then return "" end
-    name = name:lower()
-    return name:gsub(MULTIBYTE_FIRST_CHAR, string.upper, 1)
+    if addon.Forever then
+        return name
+    else
+        if not name then return "" end
+        if #name == 0 then return "" end
+        name = name:lower()
+        return name:gsub(MULTIBYTE_FIRST_CHAR, string.upper, 1)
+    end
 end
 
 function AltsDB:GetProperRealmName(realm)
@@ -101,8 +105,12 @@ function AltsDB:ParseName(name)
 end
 
 function AltsDB:FormatUnitName(name, relative)
-    local nameOnly, realm = self:ParseName(name)
-    return self:FormatNameWithRealm(nameOnly, realm, relative)
+    if addon.Forever then
+        return name
+    else
+        local nameOnly, realm = self:ParseName(name)
+        return self:FormatNameWithRealm(nameOnly, realm, relative)
+    end
 end
 
 function AltsDB:FormatUnitList(sep, relative, ...)
@@ -118,6 +126,14 @@ function AltsDB:FormatUnitList(sep, relative, ...)
         end
     end
     return str
+end
+
+function AltsDB:FormatFullName(name, surname)
+    if surname and #surname > 0 then
+        return (name or "") .. " " .. surname
+    else
+        return (name or "")
+    end
 end
 
 function AltsDB:GetAlternateName(name)

@@ -149,7 +149,7 @@ do
     local function GetName(dropdown)
         local unit = dropdown.unit
         if _G.UnitExists(unit) and _G.UnitIsPlayer(unit) then
-            return _G.GetUnitName(unit, true)
+            return addon.GetUnitName(unit, true)
         end
         if dropdown.bnetIDAccount then
             local name = addon.GetNameForBNetFriend(dropdown.bnetIDAccount)
@@ -223,8 +223,17 @@ do
         if strsub(contextName, 1, 1) == "|" then
             return nil
         else
-            local name = AltsDB:FormatNameWithRealm(contextData.name, contextData.server)
-            return name
+            if addon.Forever then
+                local surname = contextData.surname
+                if surname then
+                    return contextName .. " " .. surname
+                else
+                    return contextName
+                end
+            else
+                local name = AltsDB:FormatNameWithRealm(contextData.name, contextData.server)
+                return name
+            end
         end
     end
 
@@ -240,7 +249,7 @@ do
         rootDescription:CreateButton(L["Set Main"], function()
             local name = GetNameForContext(contextData)
             if name then
-                Alts:SetMainHandler(name)
+                Alts:SetMainForAlt(name)
             end
         end)
     end
