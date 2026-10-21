@@ -216,6 +216,14 @@ local EditAltsTable = {}
 
 Alts.matchFuncs = {}
 
+local function split(str)
+    local t = {}
+    for word in str:gmatch("%S+") do
+       table.insert(t, word)
+    end
+    return t
+end
+
 function Alts:HookChatFrames()
     for i = 1, _G.NUM_CHAT_WINDOWS do
         local chatFrame = _G["ChatFrame" .. i]
@@ -2570,14 +2578,6 @@ function Alts:IGNORELIST_UPDATE(event, message)
     self:UnregisterEvent("IGNORELIST_UPDATE")
     if self.db.profile.debug then self:Print("Ignore list updated.") end
     self:CheckAndUpdateIgnores()
-end
-
-local function split(str)
-    local t = {}
-    for word in str:gmatch("%S+") do
-       table.insert(t, word)
-    end
-    return t
 end
 
 function wrap(str, limit, indent, indent1, offset)
